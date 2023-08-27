@@ -11,7 +11,7 @@ Quadro 1:
 
 Quadro 2:
 
-• O responsável pelo segmento foi o Google (fonte) e a empresa de telefonia Vivo (destino), isto foi descoberto por meio da pesquisa do IP de fonte no site https://www.iplocation.net/ip-lookup.
+• O responsável pelo segmento foi o Google (fonte) e a empresa de telefonia Vivo (destino), isto foi descoberto por meio da pesquisa dos IPs de fonte e destino no site https://www.iplocation.net/ip-lookup.
 • Endereço IP fonte: 2600:1901:1:c36::
 • Endereço IP destino: 2804:1b3:ad42:7c6c:f72f:870:d3ad:84b2
 • Endereço MAC de origem: d8:c6:78:b5:79:b0
@@ -22,9 +22,11 @@ Quadro 2:
 
 Pergunta 2:
 
-• O tempo entre o primeiro (aos 8,691101222s) e último (aos 9,717268304s) quadros  da comunicação com o servidor do IME foi de 1,026167082 segundos.
+• O tempo entre o primeiro (aos 11,540224710s) e último (aos 11,616527253s) quadros  da comunicação com o servidor do IME foi de 0,076302543 segundos.
 
-• Observando a frame do Wireshark com o filtro de ip.src=200.144.244.77 (ou seja, foram considerados somente os pacotes que foram do servidor do IME -> computador), foi possível notar o recebimento de 130,986kB (130986 bytes). Foi verificado também o tamanho do arquivo recebido por meio do comando:
+• Observando a frame do Wireshark com o filtro de ip.src=200.144.244.77 (ou seja, foram considerados somente os pacotes que foram do servidor do IME -> computador), foi possível notar o recebimento de 6227 bytes. Foi verificado também o tamanho do arquivo recebido por meio do comando:
 	$ ls -l ep00
-Que foi de 121,411kB (121411 bytes). 
-Para o cálculo da sobrecarga foi feito o cálculo do tamanho total dos pacotes enviados do servidor para o computador sobre o tamanho total do arquivo recebido (em bytes), menos 1, o que resultou em (130986/121411) - 1 ≅ 07,88% de sobrecarga.
+Que foi de 280 bytes. Contudo, para os cálculos foi utilizado o espaço ocupado pelo arquivo no disco, que pode ser verificado com o comando:
+	$ du -h ep00
+Que retornou o valor de 4kB (equivalente à 4096 bytes).
+Para o cálculo da sobrecarga foi feito o cálculo do tamanho total dos pacotes enviados do servidor para o computador sobre o tamanho total do arquivo recebido (em bytes), menos 1, o que resultou em (6227/4096) - 1 ≅ 52,802% de sobrecarga.
