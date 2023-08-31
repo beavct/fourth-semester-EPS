@@ -1,0 +1,31 @@
+E5.e:
+
+{"type":"NFA","nfa":{"transitions":{"start":{"0":["start"],"":["s0"]},"s0":{"0":["s1"],"1":["s0"]},"s1":{"0":["s1"]}},"startState":"start","acceptStates":["s1"]},"states":{"start":{},"s0":{"top":242.60000534057616,"left":134.59999389648436,"displayId":"s0"},"s1":{"isAccept":true,"top":248.3999931335449,"left":283.40001220703124,"displayId":"s1"}},"transitions":[{"stateA":"start","label":"0","stateB":"start"},{"stateA":"start","label":"ϵ","stateB":"s0"},{"stateA":"s0","label":"0","stateB":"s1"},{"stateA":"s0","label":"1","stateB":"s0"},{"stateA":"s1","label":"0","stateB":"s1"}],"bulkTests":{"accept":"0\n00\n010000\n10","reject":""}}
+
+
+E5.f:
+
+{"type":"NFA","nfa":{"transitions":{"start":{"0":["s0"],"1":["start"],"":["s0"]},"s0":{"0":["s1"]},"s1":{"1":["start"]}},"startState":"start","acceptStates":["start"]},"states":{"start":{"isAccept":true},"s0":{"top":228.3999931335449,"left":234.40001220703124,"displayId":"s0"},"s1":{"top":228.20001144409179,"left":440.2,"displayId":"s1"}},"transitions":[{"stateA":"start","label":"0","stateB":"s0"},{"stateA":"start","label":"1","stateB":"start"},{"stateA":"start","label":"ϵ","stateB":"s0"},{"stateA":"s0","label":"0","stateB":"s1"},{"stateA":"s1","label":"1","stateB":"start"}],"bulkTests":{"accept":"\n1\n1001\n001\n001111","reject":"100\n00"}}
+
+
+E6.a:
+
+1.6a) 
+
+N SEI SE TA CERTO
+{"type":"NFA","nfa":{"transitions":{"start":{"1":["s0"]},"s0":{"0":["s1"],"1":["s1"],"":["s1"]},"s1":{"0":["s2","s0"],"1":["s0"]}},"startState":"start","acceptStates":["s2"]},"states":{"start":{},"s0":{"top":317.60000534057616,"left":175.59999389648436,"displayId":"s0"},"s1":{"top":183.60000534057616,"left":265.59999389648436,"displayId":"s1"},"s2":{"isAccept":true,"top":186.60000534057616,"left":463.6000244140625,"displayId":"s2"}},"transitions":[{"stateA":"start","label":"1","stateB":"s0"},{"stateA":"s0","label":"0","stateB":"s1"},{"stateA":"s0","label":"1","stateB":"s1"},{"stateA":"s0","label":"ϵ","stateB":"s1"},{"stateA":"s1","label":"0","stateB":"s2"},{"stateA":"s1","label":"0","stateB":"s0"},{"stateA":"s1","label":"1","stateB":"s0"}],"bulkTests":{"accept":"10\n1111100000\n1000000\n111111110\n10100101010\n110011001100","reject":"\n0\n1\n01"}}
+
+1.6b)
+
+N SEI SE TA CERTO
+{"type":"NFA","nfa":{"transitions":{"start":{"1":["s0"],"":["start"]},"s0":{"1":["s1"],"":["s0"]},"s1":{"1":["s2"],"":["s1"]},"s2":{"":["s2"]}},"startState":"start","acceptStates":["s2"]},"states":{"start":{},"s0":{"top":238.8000175476074,"left":153.8000061035156,"displayId":"s0"},"s1":{"top":237.8000175476074,"left":301.8000061035156,"displayId":"s1"},"s2":{"isAccept":true,"top":226.8000175476074,"left":484.80003662109374,"displayId":"s2"}},"transitions":[{"stateA":"start","label":"1","stateB":"s0"},{"stateA":"start","label":"ϵ","stateB":"start"},{"stateA":"s0","label":"1","stateB":"s1"},{"stateA":"s0","label":"ϵ","stateB":"s0"},{"stateA":"s1","label":"1","stateB":"s2"},{"stateA":"s1","label":"ϵ","stateB":"s1"},{"stateA":"s2","label":"ϵ","stateB":"s2"}],"bulkTests":{"accept":"1010100101001011\n1111111111\n00000000011111\n111000001010","reject":"\n0\n1\n11\n010100000"}}
+
+
+Diagrama da união)
+DIAGRAMA DE ESTADOS FINAL...
+
+e13.a:
+
+
+
+
