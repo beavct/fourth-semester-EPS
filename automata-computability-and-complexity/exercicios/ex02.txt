@@ -1,0 +1,13 @@
+E18.eb)
+
+R = ε | (a|b)a*b(a(a|b)|b)a*b)*
+
+
+E19.a)
+
+{"type":"NFA","nfa":{"transitions":{"start":{"b":["s1"],"a":["s0"]},"s0":{"a":["s3"]},"s3":{"b":["s2"]},"s2":{"b":["s0"]}},"startState":"start","acceptStates":["s0","s1"]},"states":{"start":{},"s1":{"isAccept":true,"top":352.8000175476074,"left":196.8000061035156,"displayId":"s1"},"s0":{"isAccept":true,"top":225.8000175476074,"left":182.8000061035156,"displayId":"s0"},"s3":{"top":229.60000534057616,"left":349.6000244140625,"displayId":"s3"},"s2":{"top":139.60000534057616,"left":349.6000244140625,"displayId":"s2"}},"transitions":[{"stateA":"start","label":"b","stateB":"s1"},{"stateA":"start","label":"a","stateB":"s0"},{"stateA":"s0","label":"a","stateB":"s3"},{"stateA":"s3","label":"b","stateB":"s2"},{"stateA":"s2","label":"b","stateB":"s0"}],"bulkTests":{"accept":"b\na\naabb\naabbabbabb","reject":"\naa\nbb\naab\nabb\n"}}
+
+
+E19.b)
+
+{"type":"NFA","nfa":{"transitions":{"start":{"a":["s0","s1"]},"s0":{"a":["s0"]},"s2":{"a":["s3"]},"s3":{"b":["s2"]},"s1":{"b":["s2"]}},"startState":"start","acceptStates":["s0","s2"]},"states":{"start":{},"s0":{"isAccept":true,"top":233.60000534057616,"left":154.59999389648436,"displayId":"s0"},"s1":{"top":342.60000534057616,"left":16.600009155273426,"displayId":"s1"},"s2":{"isAccept":true,"top":340.3999931335449,"left":195.40001220703124,"displayId":"s2"},"s3":{"top":340.2000114440918,"left":398.2,"displayId":"s3"}},"transitions":[{"stateA":"start","label":"a","stateB":"s0"},{"stateA":"start","label":"a","stateB":"s1"},{"stateA":"s0","label":"a","stateB":"s0"},{"stateA":"s2","label":"a","stateB":"s3"},{"stateA":"s3","label":"b","stateB":"s2"},{"stateA":"s1","label":"b","stateB":"s2"}],"bulkTests":{"accept":"a\nab\naaaaaaaa\nababababab","reject":"\nb\nabb\naab\n"}}
