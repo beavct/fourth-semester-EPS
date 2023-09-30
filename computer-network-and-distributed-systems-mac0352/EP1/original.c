@@ -63,9 +63,6 @@ int main (int argc, char **argv) {
      */
     ssize_t n;
    
-    /* ESTRUTURAS NOVAS */
-
-
     if (argc != 2) {
         fprintf(stderr,"Uso: %s <Porta>\n",argv[0]);
         fprintf(stderr,"Vai rodar um servidor de echo na porta <Porta> TCP\n");
@@ -173,8 +170,6 @@ int main (int argc, char **argv) {
             /* TODO: É esta parte do código que terá que ser modificada
              * para que este servidor consiga interpretar comandos AMQP
              */
-
-
                 while ((n=read(connfd, recvline, MAXLINE)) > 0) {
                 recvline[n]=0;
                 printf("[Cliente conectado no processo filho %d enviou:] ",getpid());

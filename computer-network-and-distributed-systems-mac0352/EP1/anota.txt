@@ -1,0 +1,6 @@
+- Porta padrão do AMQP 5672
+
+- Não sei se tem que ler a header do cliente;
+FORMATO: 
+AMQP0091
+se a header for essa a conexão é aceita (Connection.Start), caso contrário é rejeitada (e manda a header correta)
