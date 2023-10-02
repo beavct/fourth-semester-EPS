@@ -40,9 +40,106 @@
 #include <time.h>
 #include <unistd.h>
 
+/*BIBLIOTECAS NOVAS*/
+
 #define LISTENQ 1
 #define MAXDATASIZE 100
 #define MAXLINE 4096
+
+
+/*DEFINES NOVOS*/
+#define MAX_FRAME_SIZE 131072
+
+
+/*FUNÇÕES NOVAS*/
+
+/*Se retornar 1 - Pode prosseguir para o Conection.Start, c.c. a conexão é recusada e o programa retorna a header correta*/
+int readHeader(int connfd){
+    /*A header que vamos ler tem 8 bytes*/
+    char header[8];
+    ssize_t n;
+
+    n = read(connfd, header, 8);
+
+    /*Envia a header de volta para o cliente*/
+
+    /*Verifica se o cliente está pedindo uma conexão com a versão AMQP 0.9.1*/
+    if(n <= 0 || strcmp("\x41\x4d\x51\x50\x00\x00\x09\x01", header) != 0){
+        /*Retorna a header correta e fecha a conexão com o socket*/
+        write(connfd, "\x41\x4d\x51\x50\x00\x00\x09\x01", 8);
+        close(connfd);
+        /*exit(0);*/
+        /*return 0;*/
+    }
+
+    return 1;
+}
+
+/*Requeisição de Conexão*/
+void Connection_Start(int connfd){
+    char request[584];
+    ssize_t n;
+
+
+    /*Connection.Start pelo cliente*/
+    n = read(connfd, request, 584);
+
+    /*Chegou no fim do arquivo e não tem mais o que ser lido*/
+    /*if(n == 0)
+        printf("oie\n");*/
+
+
+    /*Houve mensagem de Connection.Start*/
+    /*HEX retirado do Wireshark, Connection.Start-OK pelo servidor*/
+    write(connfd, "\x01\x00\x00\x00\x00\x01\x40\x00\x0a\x00\x0b\x00\x00\x01\x1c\x07" \
+            "\x70\x72\x6f\x64\x75\x63\x74\x53\x00\x00\x00\x0a\x72\x61\x62\x62" \
+            "\x69\x74\x6d\x71\x2d\x63\x07\x76\x65\x72\x73\x69\x6f\x6e\x53\x00" \
+            "\x00\x00\x06\x30\x2e\x31\x31\x2e\x30\x08\x70\x6c\x61\x74\x66\x6f" \
+            "\x72\x6d\x53\x00\x00\x00\x05\x4c\x69\x6e\x75\x78\x09\x63\x6f\x70" \
+            "\x79\x72\x69\x67\x68\x74\x53\x00\x00\x00\x49\x43\x6f\x70\x79\x72" \
+            "\x69\x67\x68\x74\x20\x28\x63\x29\x20\x32\x30\x30\x37\x2d\x32\x30" \
+            "\x31\x34\x20\x56\x4d\x57\x61\x72\x65\x20\x49\x6e\x63\x2c\x20\x54" \
+            "\x6f\x6e\x79\x20\x47\x61\x72\x6e\x6f\x63\x6b\x2d\x4a\x6f\x6e\x65" \
+            "\x73\x2c\x20\x61\x6e\x64\x20\x41\x6c\x61\x6e\x20\x41\x6e\x74\x6f" \
+            "\x6e\x75\x6b\x2e\x0b\x69\x6e\x66\x6f\x72\x6d\x61\x74\x69\x6f\x6e" \
+            "\x53\x00\x00\x00\x28\x53\x65\x65\x20\x68\x74\x74\x70\x73\x3a\x2f" \
+            "\x2f\x67\x69\x74\x68\x75\x62\x2e\x63\x6f\x6d\x2f\x61\x6c\x61\x6e" \
+            "\x78\x7a\x2f\x72\x61\x62\x62\x69\x74\x6d\x71\x2d\x63\x0c\x63\x61" \
+            "\x70\x61\x62\x69\x6c\x69\x74\x69\x65\x73\x46\x00\x00\x00\x3c\x1c" \
+            "\x61\x75\x74\x68\x65\x6e\x74\x69\x63\x61\x74\x69\x6f\x6e\x5f\x66" \
+            "\x61\x69\x6c\x75\x72\x65\x5f\x63\x6c\x6f\x73\x65\x74\x01\x1a\x65" \
+            "\x78\x63\x68\x61\x6e\x67\x65\x5f\x65\x78\x63\x68\x61\x6e\x67\x65" \
+            "\x5f\x62\x69\x6e\x64\x69\x6e\x67\x73\x74\x01\x05\x50\x4c\x41\x49" \
+            "\x4e\x00\x00\x00\x0c\x00\x67\x75\x65\x73\x74\x00\x67\x75\x65\x73" \
+            "\x74\x05\x65\x6e\x5f\x55\x53\xce"
+            ,329);
+
+}
+
+/*Descrição da documentação: propose/negotiate connection tuning parameters*/
+void Connection_Tune(int connfd){
+    char tune[64];
+    ssize_t n;
+
+    /*recebe Connection.Tune do cliente*/
+    n = read(connfd, tune, 64);
+
+    /*Responde Connection.Tune-OK*/
+    /*Não tenho certeza*/
+    write(connfd, "\x01\x00\x00\x00\x00\x01\x40\x00\x0a\x00\x14\x00\x00\x00\x00\x0a\x14\x00", 19);
+
+}
+
+void Channel_Open(int connfd);
+
+void Queue_Declare();
+
+void Connection_Open();
+
+void Channel_Close();
+
+void Basic_Consume();
+
 
 int main (int argc, char **argv) {
     /* Os sockets. Um que será o socket que vai escutar pelas conexões
@@ -63,7 +160,7 @@ int main (int argc, char **argv) {
      */
     ssize_t n;
    
-    /* ESTRUTURAS NOVAS */
+    /*VARIÁVEIS NOVAS*/
 
 
     if (argc != 2) {
@@ -175,16 +272,29 @@ int main (int argc, char **argv) {
              */
 
 
-                while ((n=read(connfd, recvline, MAXLINE)) > 0) {
-                recvline[n]=0;
-                printf("[Cliente conectado no processo filho %d enviou:] ",getpid());
-                if ((fputs(recvline,stdout)) == EOF) {
-                    perror("fputs :( \n");
-                    exit(6);
-                }
-                write(connfd, recvline, strlen(recvline));
+            /*if(readHeader(connfd)){
+                    Connection_Start(connfd);
+                    Connection_Tune(connfd);
+            }*/
+            
 
+            if(readHeader(connfd)){
+                    Connection_Start(connfd);
+                    Connection_Tune(connfd);
+
+                    while ((n=read(connfd, recvline, MAXLINE)) > 0) {
+                        recvline[n]=0;
+                        printf("[Cliente conectado no processo filho %d enviou:] ",getpid());
+                        if ((fputs(recvline,stdout)) == EOF) {
+                            perror("fputs :( \n");
+                            exit(7);
+                        }
+
+                        write(connfd, recvline, strlen(recvline));
+
+                }
             }
+
             /* ========================================================= */
             /* ========================================================= */
             /*                         EP1 FIM                           */

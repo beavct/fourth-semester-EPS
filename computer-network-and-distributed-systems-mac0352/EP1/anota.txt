@@ -4,3 +4,13 @@
 FORMATO: 
 AMQP0091
 se a header for essa a conexão é aceita (Connection.Start), caso contrário é rejeitada (e manda a header correta)
+
+- The frame-end octet MUST always be the hexadecimal value %xCE
+
+
+
+
+"\x01\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x1e\x07\xff\x00\x02\x00" \
+"\x00\x00\x3c\xce"
+
+
