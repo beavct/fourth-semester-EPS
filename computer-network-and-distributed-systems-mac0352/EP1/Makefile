@@ -1,6 +1,6 @@
 PP=gcc
 COMPFLAGS= -Wall -pedantic -O2
-OTHERS= 
+OTHERS= -lpthread
 
 ###################################################################################
 

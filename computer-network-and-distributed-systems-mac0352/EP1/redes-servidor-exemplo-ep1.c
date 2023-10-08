@@ -40,7 +40,9 @@
 #include <time.h>
 #include <unistd.h>
 
+
 /*BIBLIOTECAS NOVAS*/
+#include <pthread.h>
 
 #define LISTENQ 1
 #define MAXDATASIZE 100
@@ -49,6 +51,14 @@
 
 /*DEFINES NOVOS*/
 #define MAX_BUFFER_SIZE 1024
+#define NUM_THREADS 150
+
+
+/*STRUCTS NOVAS*/
+// Estrutura de argumentos para as threads
+struct ThreadArgs {
+    int connfd;
+};
 
 
 /*FUNÇÕES NOVAS*/
@@ -56,15 +66,13 @@
 int charToInt(char* msg, int size) {
     int valor = 0;
     for (int i = 0; i < size; i++) {
-
+        /*shift de 8 bits*/
         valor = valor << 8;
         valor += msg[i];
     }
 
     return valor;
 }
-
-char* shortToChar(short char* msg, int )
 
 /*Se retornar 1 - Pode prosseguir para o Conection.Start, c.c. a conexão é recusada e o programa retorna a header correta*/
 int readHeader(int connfd){
@@ -138,14 +146,15 @@ void Connection_Start(int connfd){
 
 /*Descrição da documentação: propose/negotiate connection tuning parameters*/
 void Connection_Tune(int connfd){
-    char info[MAX_BUFFER_SIZE];
+    char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
-    /*Responde Connection.Tune*/
+    /*Responde Connection.Tune-OK do servidor*/
     write(connfd, "\x01\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x1e\x07\xff\x00\x02\x00" \
             "\x00\x00\x3c\xce", 20);
-    /*recebe Connection.Tune-OK do cliente*/
-    n = read(connfd, info, MAX_BUFFER_SIZE);
+
+    /*recebe Connection.Tune do cliente*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);
     if(n <= 0){
         close(connfd);
         return;
@@ -154,83 +163,123 @@ void Connection_Tune(int connfd){
 
 /*Descrição da documentação: This method signals to the client that the connection is ready for use.*/
 void Connection_Open(int connfd){
-    char infos[MAX_BUFFER_SIZE];
+    char request[MAX_BUFFER_SIZE];
     ssize_t n;
-
-    /*Lê o Connection.Open enviado pelo cliente*/
-    n = read(connfd, infos, MAX_BUFFER_SIZE);
-    if(n <= 0){
-        close(connfd);
-        return;
-    }
 
     /*Connection.Open-OK por parte do servidor*/
     write(connfd, "\x01\x00\x00\x00\x00\x00\x05\x00\x0a\x00\x29\x00\xce", 13);
 
-}
-
-void Channel_Open(int connfd){
-    char infos[MAX_BUFFER_SIZE];
-    ssize_t n;
-
-    /*Channel.Open por parte do cliente*/
-    n = read(connfd, infos, MAX_BUFFER_SIZE);
+    /*Lê o Connection.Open enviado pelo cliente*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);
     if(n <= 0){
         close(connfd);
         return;
     }
 
+}
+
+void Channel_Open(int connfd){
+    char request[MAX_BUFFER_SIZE];
+    ssize_t n;
 
     /*Channel.Open-OK por parte do servidor*/
     write(connfd, "\x01\x00\x01\x00\x00\x00\x08\x00\x14\x00\x0b\x00\x00\x00\x00\xce", 16);
 
+    /*Channel.Open por parte do cliente*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
 }
 
 void Channel_Close(int connfd){
-    char infos[MAX_BUFFER_SIZE];
+    char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
-    n = read(connfd, infos, MAX_BUFFER_SIZE);    if(n <= 0){
+    /*Channel.Close por parte do cliente*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);    
+    if(n <= 0){
         close(connfd);
         return;
     }
 
+    /*Servidor manda Channel.Close-OK*/
     write(connfd, "\x01\x00\x01\x00\x00\x00\x04\x00\x14\x00\x29\xce", 12);
 
 }
 
 void Connection_Close(int connfd){
-    char infos[MAX_BUFFER_SIZE];
+    char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
-    n = read(connfd, infos, MAX_BUFFER_SIZE);
+    /*Connection.Close do cliente*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);
     if(n <= 0){
         close(connfd);
         return;
     }
 
+    /*Servidor manda Connection.Close-OK*/
     write(connfd, "\x01\x00\x00\x00\x00\x00\x04\x00\x0a\x00\x33\xce", 12);
 
 }
 
 void Queue_Declare(int connfd){
-    char infos[MAX_BUFFER_SIZE];
+    char request[MAX_BUFFER_SIZE];
     ssize_t n;
-    int size;
 
-    n = read(connfd, infos, MAX_BUFFER_SIZE);
+   /*Utilizadas para identificar as informações da fila do cliente*/ 
+    int size, i;
+    uint8_t *queueName;
+
+    /*Cliente manda Queue.Declare*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);
     if(n <= 0){
         close(connfd);
         return;
     }
 
-    write(connfd, "\x01\x00\x01\x00\x00\x00\x12\x00\x32\x00\x0b\x05\x54\x45\x53\x54" \
-        "\x45\x00\x00\x00\x00\x00\x00\x00\x00\xce", 26);
+    /*Casa do pacote recebido do cliente em que fica o tamanho do nome da fila*/
+    size = charToInt(&(request[13]), 1);
 
+    queueName = (uint8_t*)malloc(sizeof(uint8_t)*(size));
 
-    size = charToInt(&(infos[13]), 1);
+    /*Pegando o nome da fila no pacote mandado pelo cliente*/
+    for(i=0; i<size; i++){
+        queueName[i] = (uint8_t)request[14+i];
+    }
+    
+    /*Construindo a resposta do servidor*/
 
+    /*Irão ser utilizadas para construir a reposta do servidor*/
+    uint8_t totalResponseSize;
+    /*Tamanho do pacote (13) + tamanho do nome da fila (size)*/
+    totalResponseSize = 13 + size;
 
+    /*tamanho = 12*/
+    uint8_t serverResponse1[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, totalResponseSize, 0x00, 0x32, 0x00, 0x0b, (uint8_t)size};
+    /*tamanh0 = 9
+    message-count(long) e consumer-count(long)*/
+    uint8_t serverResponse2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xce};
+    uint8_t *serverResponse;
+
+    serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(size+21));  
+
+    memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
+    memcpy(serverResponse+sizeof(serverResponse1), queueName, size);
+    memcpy(serverResponse+sizeof(serverResponse1)+size, serverResponse2, sizeof(serverResponse2));
+
+    /*Mandando a resposta do servidor*/
+    write(connfd, serverResponse, sizeof(serverResponse));
+
+    /*for(i=0; i<size+21; i++)
+        printf("0x%X ", serverResponse[i]);*/
+
+    /*free(queueName);
+    free(serverResponse);*/
+
+    printf("chegou\n");
 }
 
 void Basic_Consume(int connfd);
@@ -241,27 +290,47 @@ void Basic_Deliver(int connfd);
 
 void Basic_Publish(int connfd);
 
+/*Função paralelizada*/
+void *makeConnection(void *arg){
+    struct ThreadArgs *args = (struct ThreadArgs *)arg;
+    int connfd = args->connfd;
+
+    char request[MAX_BUFFER_SIZE];
+    ssize_t n;
+
+    printf("[Uma conexão aberta]\n");
+
+    if(readHeader(connfd)){
+
+            Connection_Start(connfd);
+            Connection_Tune(connfd);
+            Connection_Open(connfd);
+            Channel_Open(connfd);
+            Queue_Declare(connfd);
+            /*Channel_Close(connfd);
+            Connection_Close(connfd);*/
+    }
+
+
+    /*Fecha a conexão do socket*/
+    printf("[Uma conexão fechada]\n");
+
+    close(connfd);
+
+    free(args);
+
+    return NULL;
+}
+
 
 int main (int argc, char **argv) {
-    /* Os sockets. Um que será o socket que vai escutar pelas conexões
-     * e o outro que vai ser o socket específico de cada conexão
-     */
     int listenfd, connfd;
-    /* Informações sobre o socket (endereço e porta) ficam nesta struct
-     */
     struct sockaddr_in servaddr;
-    /* Retorno da função fork para saber quem é o processo filho e
-     * quem é o processo pai
-     */
     pid_t childpid;
-    /* Armazena linhas recebidas do cliente
-     */
-    char recvline[MAXLINE + 1];
-    /* Armazena o tamanho da string lida do cliente
-     */
-    ssize_t n;
    
     /*VARIÁVEIS NOVAS*/
+    pthread_t threads[NUM_THREADS];
+    long t = 0;
 
 
     if (argc != 2) {
@@ -270,31 +339,11 @@ int main (int argc, char **argv) {
         exit(1);
     }
 
-    /* Criação de um socket. É como se fosse um descritor de arquivo.
-     * É possível fazer operações como read, write e close. Neste caso o
-     * socket criado é um socket IPv4 (por causa do AF_INET), que vai
-     * usar TCP (por causa do SOCK_STREAM), já que o AMQP funciona sobre
-     * TCP, e será usado para uma aplicação convencional sobre a Internet
-     * (por causa do número 0)
-     */
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket :(\n");
         exit(2);
     }
 
-    /* Agora é necessário informar os endereços associados a este
-     * socket. É necessário informar o endereço / interface e a porta,
-     * pois mais adiante o socket ficará esperando conexões nesta porta
-     * e neste(s) endereços. Para isso é necessário preencher a struct
-     * servaddr. É necessário colocar lá o tipo de socket (No nosso
-     * caso AF_INET porque é IPv4), em qual endereço / interface serão
-     * esperadas conexões (Neste caso em qualquer uma -- INADDR_ANY) e
-     * qual a porta. Neste caso será a porta que foi passada como
-     * argumento no shell (atoi(argv[1])). No caso do servidor AMQP,
-     * utilize a porta padrão do protocolo que você deve descobrir
-     * lendo a especificaçao dele ou capturando os pacotes de conexões
-     * ao RabbitMQ com o Wireshark
-     */
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -304,12 +353,7 @@ int main (int argc, char **argv) {
         exit(3);
     }
 
-    /* Como este código é o código de um servidor, o socket será um
-     * socket que escutará por conexões. Para isto é necessário chamar
-     * a função listen que define que este é um socket de servidor que
-     * ficará esperando por conexões nos endereços definidos na função
-     * bind.
-     */
+
     if (listen(listenfd, LISTENQ) == -1) {
         perror("listen :(\n");
         exit(4);
@@ -318,42 +362,27 @@ int main (int argc, char **argv) {
     printf("[Servidor no ar. Aguardando conexões na porta %s]\n",argv[1]);
     printf("[Para finalizar, pressione CTRL+c ou rode um kill ou killall]\n");
    
-    /* O servidor no final das contas é um loop infinito de espera por
-     * conexões e processamento de cada uma individualmente
-     */
 	for (;;) {
-        /* O socket inicial que foi criado é o socket que vai aguardar
-         * pela conexão na porta especificada. Mas pode ser que existam
-         * diversos clientes conectando no servidor. Por isso deve-se
-         * utilizar a função accept. Esta função vai retirar uma conexão
-         * da fila de conexões que foram aceitas no socket listenfd e
-         * vai criar um socket específico para esta conexão. O descritor
-         * deste novo socket é o retorno da função accept.
-         */
+
         if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
             perror("accept :(\n");
             exit(5);
         }
-      
-        /* Agora o servidor precisa tratar este cliente de forma
-         * separada. Para isto é criado um processo filho usando a
-         * função fork. O processo vai ser uma cópia deste. Depois da
-         * função fork, os dois processos (pai e filho) estarão no mesmo
-         * ponto do código, mas cada um terá um PID diferente. Assim é
-         * possível diferenciar o que cada processo terá que fazer. O
-         * filho tem que processar a requisição do cliente. O pai tem
-         * que voltar no loop para continuar aceitando novas conexões.
-         * Se o retorno da função fork for zero, é porque está no
-         * processo filho.
-         */
-        if ( (childpid = fork()) == 0) {
-            /**** PROCESSO FILHO ****/
-            printf("[Uma conexão aberta]\n");
-            /* Já que está no processo filho, não precisa mais do socket
-             * listenfd. Só o processo pai precisa deste socket.
-             */
-            close(listenfd);
-         
+
+        /*Estrutura para a utilização de Pthreads*/
+        struct ThreadArgs *args = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+        if (args == NULL) {
+            perror("malloc :(\n");
+            close(connfd);
+            continue;
+        }
+        /*Assim conseguiremos ter acesso aos sockets dentro da rotina com Pthreads*/
+        args->connfd = connfd;
+
+        /*pthread_create retorna 0 quando a thread é criada corretamente*/
+        if ( (childpid = pthread_create(&threads[t], NULL, makeConnection, args)) == 0) {
+            /*Incrementa a quantidade de threads*/
+            t++;
             /* Agora pode ler do socket e escrever no socket. Isto tem
              * que ser feito em sincronia com o cliente. Não faz sentido
              * ler sem ter o que ler. Ou seja, neste caso está sendo
@@ -373,20 +402,6 @@ int main (int argc, char **argv) {
              */
 
 
-            /*if(readHeader(connfd)){
-                    Connection_Start(connfd);
-                    Connection_Tune(connfd);
-            }*/
-            
-
-            if(readHeader(connfd)){
-                    Connection_Start(connfd);
-                    Connection_Tune(connfd);
-                    Connection_Open(connfd);
-                    Channel_Open(connfd);
-                    Queue_Declare(connfd);
-            }
-
             /* ========================================================= */
             /* ========================================================= */
             /*                         EP1 FIM                           */
@@ -396,16 +411,21 @@ int main (int argc, char **argv) {
             /* Após ter feito toda a troca de informação com o cliente,
              * pode finalizar o processo filho
              */
-            printf("[Uma conexão fechada]\n");
-            exit(0);
+            /*exit(0);*/
         }
-        else
-            /**** PROCESSO PAI ****/
-            /* Se for o pai, a única coisa a ser feita é fechar o socket
-             * connfd (ele é o socket do cliente específico que será tratado
-             * pelo processo filho)
-             */
+        else{
+            printf("Não foi possível criar a thread :(\n");
             close(connfd);
+        }
+
+        /*Vai liberando as threads conforme as conexões vão fechando*/
+        for (int i = 0; i < t; i++) {
+            pthread_join(threads[i], NULL);
+        }
+
     }
+
+    close(listenfd);
+
     exit(0);
 }
