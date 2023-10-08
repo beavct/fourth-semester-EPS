@@ -53,6 +53,19 @@
 
 /*FUNÇÕES NOVAS*/
 
+int charToInt(char* msg, int size) {
+    int valor = 0;
+    for (int i = 0; i < size; i++) {
+
+        valor = valor << 8;
+        valor += msg[i];
+    }
+
+    return valor;
+}
+
+char* shortToChar(short char* msg, int )
+
 /*Se retornar 1 - Pode prosseguir para o Conection.Start, c.c. a conexão é recusada e o programa retorna a header correta*/
 int readHeader(int connfd){
     /*A header que vamos ler tem 8 bytes*/
@@ -115,7 +128,11 @@ void Connection_Start(int connfd){
         "\x00\x05\x65\x6e\x5f\x55\x53\xce", 520);
 
     /*Connection.Start pelo cliente*/
-    n = read(connfd, request, MAX_BUFFER_SIZE);        
+    n = read(connfd, request, MAX_BUFFER_SIZE);   
+    if(n <= 0){
+        close(connfd);
+        return;
+    }     
 
 }
 
@@ -126,29 +143,103 @@ void Connection_Tune(int connfd){
 
     /*Responde Connection.Tune*/
     write(connfd, "\x01\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x1e\x07\xff\x00\x02\x00" \
-            "\x00\x00\x3c\xce", 21);
-
+            "\x00\x00\x3c\xce", 20);
     /*recebe Connection.Tune-OK do cliente*/
     n = read(connfd, info, MAX_BUFFER_SIZE);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
 }
 
-void Connection_Open(){
+/*Descrição da documentação: This method signals to the client that the connection is ready for use.*/
+void Connection_Open(int connfd){
     char infos[MAX_BUFFER_SIZE];
     ssize_t n;
+
+    /*Lê o Connection.Open enviado pelo cliente*/
+    n = read(connfd, infos, MAX_BUFFER_SIZE);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    /*Connection.Open-OK por parte do servidor*/
+    write(connfd, "\x01\x00\x00\x00\x00\x00\x05\x00\x0a\x00\x29\x00\xce", 13);
+
 }
 
 void Channel_Open(int connfd){
     char infos[MAX_BUFFER_SIZE];
     ssize_t n;
 
+    /*Channel.Open por parte do cliente*/
+    n = read(connfd, infos, MAX_BUFFER_SIZE);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+
+    /*Channel.Open-OK por parte do servidor*/
+    write(connfd, "\x01\x00\x01\x00\x00\x00\x08\x00\x14\x00\x0b\x00\x00\x00\x00\xce", 16);
+
 }
 
-void Queue_Declare();
+void Channel_Close(int connfd){
+    char infos[MAX_BUFFER_SIZE];
+    ssize_t n;
+
+    n = read(connfd, infos, MAX_BUFFER_SIZE);    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    write(connfd, "\x01\x00\x01\x00\x00\x00\x04\x00\x14\x00\x29\xce", 12);
+
+}
+
+void Connection_Close(int connfd){
+    char infos[MAX_BUFFER_SIZE];
+    ssize_t n;
+
+    n = read(connfd, infos, MAX_BUFFER_SIZE);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    write(connfd, "\x01\x00\x00\x00\x00\x00\x04\x00\x0a\x00\x33\xce", 12);
+
+}
+
+void Queue_Declare(int connfd){
+    char infos[MAX_BUFFER_SIZE];
+    ssize_t n;
+    int size;
+
+    n = read(connfd, infos, MAX_BUFFER_SIZE);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    write(connfd, "\x01\x00\x01\x00\x00\x00\x12\x00\x32\x00\x0b\x05\x54\x45\x53\x54" \
+        "\x45\x00\x00\x00\x00\x00\x00\x00\x00\xce", 26);
 
 
-void Channel_Close();
+    size = charToInt(&(infos[13]), 1);
 
-void Basic_Consume();
+
+}
+
+void Basic_Consume(int connfd);
+
+void Basic_Ack(int connfd);
+
+void Basic_Deliver(int connfd);
+
+void Basic_Publish(int connfd);
 
 
 int main (int argc, char **argv) {
@@ -291,6 +382,9 @@ int main (int argc, char **argv) {
             if(readHeader(connfd)){
                     Connection_Start(connfd);
                     Connection_Tune(connfd);
+                    Connection_Open(connfd);
+                    Channel_Open(connfd);
+                    Queue_Declare(connfd);
             }
 
             /* ========================================================= */

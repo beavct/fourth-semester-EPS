@@ -1,5 +1,5 @@
 PP=gcc
-COMPFLAGS= -Wall -ansi -pedantic -O2
+COMPFLAGS= -Wall -pedantic -O2
 OTHERS= 
 
 ###################################################################################
