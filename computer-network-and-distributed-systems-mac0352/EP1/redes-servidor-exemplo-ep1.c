@@ -53,6 +53,9 @@
 #define MAX_BUFFER_SIZE 1024
 #define NUM_THREADS 150
 
+/*VARIÁVEIS GLOBAIS*/
+uint8_t deliveryTag = 1;
+
 
 /*STRUCTS NOVAS*/
 // Estrutura de argumentos para as threads
@@ -63,6 +66,14 @@ struct ThreadArgs {
 
 /*FUNÇÕES NOVAS*/
 
+/*Para testes*/
+void printaHex(uint8_t* msg, int size){
+    int i;
+
+    for(i=0; i<size+21; i++)
+        printf("0x%X ", msg[i]);
+}
+
 int charToInt(char* msg, int size) {
     int valor = 0;
     for (int i = 0; i < size; i++) {
@@ -72,6 +83,22 @@ int charToInt(char* msg, int size) {
     }
 
     return valor;
+}
+
+/*Gerador de Consumer-Tag aleatorizado*/
+uint8_t* generateConsumerTag(){
+    int i;
+    int size = rand() % 32;
+
+    uint8_t* consumerTag = (uint8_t*)malloc(sizeof(uint8_t)*size);
+
+    srand(time(NULL));
+    for(i = 0; i < size; i++){
+        /*255 é o max de uint8_t*/
+        consumerTag[i] = 65 + (rand() % (122 - 65));
+    }
+
+    return consumerTag;
 }
 
 /*Se retornar 1 - Pode prosseguir para o Conection.Start, c.c. a conexão é recusada e o programa retorna a header correta*/
@@ -95,6 +122,7 @@ int readHeader(int connfd){
     return 1;
 }   
 
+/*No final arrumar aq - tem a assinatura do RabbitMQ*/
 /*Requisição de Conexão*/
 void Connection_Start(int connfd){
     char request[MAX_BUFFER_SIZE];
@@ -134,6 +162,9 @@ void Connection_Start(int connfd){
         "\x6e\x53\x00\x00\x00\x06\x33\x2e\x39\x2e\x31\x33\x00\x00\x00\x0e" \
         "\x50\x4c\x41\x49\x4e\x20\x41\x4d\x51\x50\x4c\x41\x49\x4e\x00\x00" \
         "\x00\x05\x65\x6e\x5f\x55\x53\xce", 520);
+    /*write(connfd, "0x00, 0x00, 0x00, <tamanho 4 bytes>, 0x00, 0x0A, 0x00, 0x0B", )*/
+
+    /*write(connfd, "0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x0a, 0x00, 0x0a", 65);*/
 
     /*Connection.Start pelo cliente*/
     n = read(connfd, request, MAX_BUFFER_SIZE);   
@@ -225,20 +256,13 @@ void Connection_Close(int connfd){
 
 }
 
-void Queue_Declare(int connfd){
-    char request[MAX_BUFFER_SIZE];
-    ssize_t n;
+uint8_t* Queue_Declare(int connfd, char* request){
 
    /*Utilizadas para identificar as informações da fila do cliente*/ 
     int size, i;
     uint8_t *queueName;
-
-    /*Cliente manda Queue.Declare*/
-    n = read(connfd, request, MAX_BUFFER_SIZE);
-    if(n <= 0){
-        close(connfd);
-        return;
-    }
+    /*Quarda o valor de retorno*/
+    uint8_t* ret;
 
     /*Casa do pacote recebido do cliente em que fica o tamanho do nome da fila*/
     size = charToInt(&(request[13]), 1);
@@ -254,7 +278,7 @@ void Queue_Declare(int connfd){
 
     /*Irão ser utilizadas para construir a reposta do servidor*/
     uint8_t totalResponseSize;
-    /*Tamanho do pacote (13) + tamanho do nome da fila (size)*/
+    /*Tamanho do pacote (13) + tamanho do nome da fila (size) + tamanho da fila (1)*/
     totalResponseSize = 13 + size;
 
     /*tamanho = 12*/
@@ -264,51 +288,159 @@ void Queue_Declare(int connfd){
     uint8_t serverResponse2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xce};
     uint8_t *serverResponse;
 
-    serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(size+21));  
+    serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(size+21));
 
+    /*Concatena tudo na resposta do servidor*/
     memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
     memcpy(serverResponse+sizeof(serverResponse1), queueName, size);
     memcpy(serverResponse+sizeof(serverResponse1)+size, serverResponse2, sizeof(serverResponse2));
 
     /*Mandando a resposta do servidor*/
-    write(connfd, serverResponse, sizeof(serverResponse));
+    write(connfd, serverResponse, size+21);
 
-    /*for(i=0; i<size+21; i++)
-        printf("0x%X ", serverResponse[i]);*/
+    free(serverResponse);
 
-    /*free(queueName);
-    free(serverResponse);*/
+    /*Constrói o vetor de retorno
+    Tamanho do nome da fila + nome da fila + quantidade de clientes(0)*/
+    ret = (uint8_t*)malloc(sizeof(uint8_t)*(size+2));
+    ret[0] = (uint8_t)size;
+    memcpy(ret+1, queueName, size);
+    ret[size+1] = (uint8_t)0;
 
-    printf("chegou\n");
+    free(queueName);
+
+    return ret;
 }
 
-void Basic_Consume(int connfd);
+/*This method delivers a message to the client, via a consumer.*/
+void Basic_Deliver(int connfd, uint8_t* consumerTag){
+    uint8_t length = 5 + sizeof(consumerTag) + 9 + 1;
+    uint8_t serverResponse1[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, length, 0x00, 0x3c, 0x00, 0x3c, (uint8_t)sizeof(consumerTag)};
+    uint8_t serverResponse2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, deliveryTag, 0x00};
+    uint8_t *serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(21+sizeof(consumerTag)));
+
+    deliveryTag++;
+
+    /*Construindo a resposta do servidor*/
+    memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
+    memcpy(serverResponse+sizeof(serverResponse1), consumerTag, (uint8_t)sizeof(consumerTag));
+    memcpy(serverResponse+sizeof(serverResponse1)+sizeof(consumerTag), serverResponse2, sizeof(serverResponse2));
+
+    /*Mandando a resposta do servidor*/
+    write(connfd, serverResponse, 21+sizeof(consumerTag));
+
+    free(serverResponse);
+
+}
+
+/*Função do cliente*/
+void Basic_Consume(int connfd, char* request){
+
+    /*Utilizado para pegar a consumer-tag*/
+    int queueNameSize, consumerTagSize, i;
+    uint8_t* consumerTag;
+
+    queueNameSize = charToInt(&(request[13]), 1);
+    consumerTagSize = charToInt(&(request[14+queueNameSize]), 1);
+
+    if(consumerTagSize == 0){
+        consumerTag = generateConsumerTag();
+        consumerTagSize = sizeof(consumerTag);
+    }
+    else{
+        consumerTag = (uint8_t*)malloc(sizeof(uint8_t)*consumerTagSize);
+        for(i=0; i<consumerTagSize; i++){
+            consumerTag[i] = (uint8_t)request[15+queueNameSize+i];
+        }
+    }
+
+    /*Para a resposta do servidor*/
+    uint8_t length = (uint8_t)consumerTagSize + 5;
+    uint8_t serverResponse1[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, length, 0x00, 0x3c, 0x00, 0x15, (uint8_t)consumerTagSize};
+    uint8_t serverResponse2[] = {0xce};
+    uint8_t *serverResponse;
+
+    /*Construindo a resposta do servidor*/
+    serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(13+consumerTagSize));
+    memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
+    memcpy(serverResponse+sizeof(serverResponse1), consumerTag, consumerTagSize);
+    memcpy(serverResponse+sizeof(serverResponse1)+consumerTagSize, serverResponse2, 1);
+
+    /*Mandando a resposta do servidor*/
+    write(connfd, serverResponse, 13+consumerTagSize);
+
+    Basic_Deliver(connfd, consumerTag);
+}
+
+void Basic_Publish(int connfd, char* request){
+    printf("entrou no publish\n");
+}
 
 void Basic_Ack(int connfd);
 
-void Basic_Deliver(int connfd);
-
-void Basic_Publish(int connfd);
-
 /*Função paralelizada*/
 void *makeConnection(void *arg){
+    /*Necessário por conta das threads*/
     struct ThreadArgs *args = (struct ThreadArgs *)arg;
     int connfd = args->connfd;
 
+    /*Leitura do pacote e identificação do método*/
     char request[MAX_BUFFER_SIZE];
+    int methodID;
     ssize_t n;
+
+    /*Filas
+    FAÇO ESSA BOMBA DPS*/
+    /*uint8_t* queues = NULL;
+    uint8_t retAux[8];*/
 
     printf("[Uma conexão aberta]\n");
 
     if(readHeader(connfd)){
 
+            /*ínicio da conexão e abertura do canal*/
             Connection_Start(connfd);
             Connection_Tune(connfd);
             Connection_Open(connfd);
             Channel_Open(connfd);
-            Queue_Declare(connfd);
-            /*Channel_Close(connfd);
-            Connection_Close(connfd);*/
+
+            printf("chegou no read\n");
+
+            /*Leitura da frame toda*/
+            /*ERRO - A vezes da merda aqui e não sai*/
+            n = read(connfd, request, MAX_BUFFER_SIZE);
+            if(n <= 0){
+                close(connfd);
+                return NULL;
+            }
+
+            printf("saiu do read\n");
+
+            methodID = charToInt(&request[9], 2);
+
+            printf("%d\n", methodID);
+
+            /*Criação de fila*/
+            if(methodID == 10){
+                uint8_t* ret;
+
+                /*Declara a fila*/
+                ret = Queue_Declare(connfd, request);
+                /*printaHex(ret, sizeof(ret));*/
+
+                /*Fecha a conexão*/
+                Channel_Close(connfd);
+                Connection_Close(connfd);
+
+            }
+            /*Inscrever consumidor*/
+            else if(methodID == 20) 
+                Basic_Consume(connfd, request);
+            /*Publicar mensagem*/
+            else if(methodID == 40)
+                Basic_Publish(connfd, request);
+
+
     }
 
 
@@ -381,36 +513,9 @@ int main (int argc, char **argv) {
 
         /*pthread_create retorna 0 quando a thread é criada corretamente*/
         if ( (childpid = pthread_create(&threads[t], NULL, makeConnection, args)) == 0) {
+            
             /*Incrementa a quantidade de threads*/
             t++;
-            /* Agora pode ler do socket e escrever no socket. Isto tem
-             * que ser feito em sincronia com o cliente. Não faz sentido
-             * ler sem ter o que ler. Ou seja, neste caso está sendo
-             * considerado que o cliente vai enviar algo para o servidor.
-             * O servidor vai processar o que tiver sido enviado e vai
-             * enviar uma resposta para o cliente (Que precisará estar
-             * esperando por esta resposta) 
-             */
-
-            /* ========================================================= */
-            /* ========================================================= */
-            /*                         EP1 INÍCIO                        */
-            /* ========================================================= */
-            /* ========================================================= */
-            /* TODO: É esta parte do código que terá que ser modificada
-             * para que este servidor consiga interpretar comandos AMQP
-             */
-
-
-            /* ========================================================= */
-            /* ========================================================= */
-            /*                         EP1 FIM                           */
-            /* ========================================================= */
-            /* ========================================================= */
-
-            /* Após ter feito toda a troca de informação com o cliente,
-             * pode finalizar o processo filho
-             */
             /*exit(0);*/
         }
         else{
@@ -419,9 +524,9 @@ int main (int argc, char **argv) {
         }
 
         /*Vai liberando as threads conforme as conexões vão fechando*/
-        for (int i = 0; i < t; i++) {
+        /*for (int i = 0; i < t; i++) {
             pthread_join(threads[i], NULL);
-        }
+        }*/
 
     }
 
