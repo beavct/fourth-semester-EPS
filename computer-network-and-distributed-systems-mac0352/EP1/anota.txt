@@ -8,3 +8,145 @@ se a header for essa a conexão é aceita (Connection.Start), caso contrário é
 - The frame-end octet MUST always be the hexadecimal valor
 
 - Tem que ver se as coisas que nao tem tamanho uint8_t, como length, deliveryTag, channel, class, method, etc, tem que fazer cast ou se pode só colocar 0x00... na frente
+
+
+
+#include <arpa/inet.h>
+uint32_t htonl(uint32_t hostlong);
+uint16_t htons(uint16_t hostshort);
+uint32_t ntohl(uint32_t netlong);
+uint16_t ntohs(uint16_t netshort);
+
+
+
+
+uint8_t* Queue_Declare(int connfd, char* request){
+
+   /*Utilizadas para identificar as informações da fila do cliente*/ 
+    int queueNameSize, i;
+    uint8_t *queueName;
+    /*Quarda o valor de retorno*/
+    uint8_t *ret;
+
+    /*Casa do pacote recebido do cliente em que fica o tamanho do nome da fila*/
+    queueNameSize = charToInt(&(request[13]), 1);
+
+    queueName = (uint8_t*)malloc(sizeof(uint8_t)*(queueNameSize));
+
+    /*Pegando o nome da fila no pacote mandado pelo cliente*/
+    for(i=0; i<queueNameSize; i++){
+        queueName[i] = (uint8_t)request[14+i];
+    }
+    
+    /*Construindo a resposta do servidor*/
+
+    /*Irão ser utilizadas para construir a reposta do servidor*/
+    // pode mudar pra int
+    //htonl(totalResponseSize)
+    uint8_t length;
+    /*Tamanho do pacote (13) + tamanho do nome da fila (size) + tamanho da fila (1)*/
+    length = 13 + queueNameSize;
+
+    /*tamanho = 12*/
+    uint8_t serverResponse1[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, length, 0x00, 0x32, 0x00, 0x0b, (uint8_t)queueNameSize};
+    /*tamanh0 = 9
+    message-count(long) e consumer-count(long)*/
+    uint8_t serverResponse2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xce};
+    uint8_t *serverResponse;
+
+    serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(queueNameSize+21));
+
+    /*Concatena tudo na resposta do servidor*/
+    memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
+    memcpy(serverResponse+sizeof(serverResponse1), queueName, queueNameSize);
+    memcpy(serverResponse+sizeof(serverResponse1)+queueNameSize, serverResponse2, sizeof(serverResponse2));
+
+    /*Mandando a resposta do servidor*/
+    write(connfd, serverResponse, queueNameSize+21);
+
+    free(serverResponse);
+
+    /*Constrói o vetor de retorno
+    Tamanho do nome da fila + nome da fila + quantidade de clientes(0)*/
+    ret = (uint8_t*)malloc(sizeof(uint8_t)*(queueNameSize));
+    memcpy(ret, queueName, queueNameSize);
+
+    free(queueName);
+
+    return ret;
+}
+
+
+
+
+
+/*Função do consumidor da mensagem*/
+uint8_t** Basic_Consume(int connfd, char* request){
+
+    /*Utilizado para pegar a consumer-tag*/
+    int queueNameSize, consumerTagSize, i;
+    uint8_t *consumerTag, *queueName, **ret;
+
+    ret = (uint8_t**)malloc(sizeof(uint8_t*)*2);
+
+    queueNameSize = charToInt(&(request[13]), 1);
+    consumerTagSize = charToInt(&(request[14+queueNameSize]), 1);
+
+    queueName = (uint8_t*)malloc(sizeof(uint8_t)*queueNameSize);
+    for(i=0; i<queueNameSize; i++){
+        queueName[i] = (uint8_t)request[14+i];
+    }
+
+    if(consumerTagSize == 0){
+        consumerTag = generateConsumerTag();
+        consumerTagSize = (uint8_t)sizeof(consumerTag);
+    }
+    else{
+        consumerTag = (uint8_t*)malloc(sizeof(uint8_t)*consumerTagSize);
+        for(i=0; i<consumerTagSize; i++){
+            consumerTag[i] = (uint8_t)request[15+queueNameSize+i];
+        }
+    }
+
+    uint32_t length;
+    /*class(2) + method(2) + consumerTagSize(1) + consumerTag*/
+    length = 5 + consumerTagSize;
+    length = htonl(length);
+
+    uint8_t type[] = {0x01};
+    uint8_t channel[] = {0x00, 0x01};
+    uint8_t classs[] = {0x00, 0x3c};
+    uint8_t method[] = {0x00, 0x15};
+    uint8_t sizeC[] = {(uint8_t)consumerTagSize};
+    uint8_t end[] = {0xce};
+
+    write(connfd, type, 1);
+    write(connfd, channel, 2);
+    write(connfd, (uint8_t*)&length, 4);
+    write(connfd, classs, 2);
+    write(connfd, method, 2);
+    write(connfd, sizeC, 1);
+    write(connfd, consumerTag, (uint8_t)consumerTagSize);
+    write(connfd, end, 1);
+
+
+    /*Para a resposta do servidor*/
+    //uint8_t length = (uint8_t)consumerTagSize + 5;
+    //uint8_t serverResponse1[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, length, 0x00, 0x3c, 0x00, 0x15, (uint8_t)consumerTagSize};
+    //uint8_t serverResponse2[] = {0xce};
+    //uint8_t *serverResponse;
+//
+    ///*Construindo a resposta do servidor*/
+    //serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(13+consumerTagSize));
+    //memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
+    //memcpy(serverResponse+sizeof(serverResponse1), consumerTag, consumerTagSize);
+    //memcpy(serverResponse+sizeof(serverResponse1)+consumerTagSize, serverResponse2, 1);
+//
+    ///*Mandando a resposta do servidor*/
+    //write(connfd, serverResponse, 13+consumerTagSize);
+
+    ret[0] = queueName;
+    ret[1] = consumerTag;
+
+    return ret;
+}
