@@ -50,12 +50,8 @@
 
 
 /*DEFINES NOVOS*/
-#define MAX_BUFFER_SIZE 1024
+#define MAX_BUFFER_SIZE 4096
 #define NUM_THREADS 150
-
-/*VARIÁVEIS GLOBAIS*/
-uint8_t deliveryTag = 1;
-
 
 /*STRUCTS NOVAS*/
 // Estrutura de argumentos para as threads
@@ -63,6 +59,37 @@ struct ThreadArgs {
     int connfd;
 };
 
+typedef struct socketNode{
+    int connfd;
+    uint8_t* consumerTag;
+    struct socketNode* next;
+    struct socketNode* ant;
+    int head;
+}socketNode;
+
+typedef struct queueNode{
+    //uint8_t* consumerTag;
+    //uint8_t* msg;
+    //uint8_t* routingKey;
+    //uint8_t bodySize;
+    //uint8_t exchange;
+    //uint8_t redelivered;
+    uint8_t* queueName;
+    struct queueNode* next;
+    struct socketNode* socketHead;
+    int socketSize;
+
+}queueNode;  
+
+typedef struct queue{
+    struct queueNode* head;
+    int queueSize;
+}queueList;
+
+
+/*VARIÁVEIS GLOBAIS*/
+uint8_t deliveryTag = 1;
+queueList *globalList;
 
 /*FUNÇÕES NOVAS*/
 
@@ -72,6 +99,39 @@ void printaHex(uint8_t* msg, int size){
 
     for(i=0; i<size+21; i++)
         printf("0x%X ", msg[i]);
+
+    printf("\n");
+}
+
+/*Para testes das filas*/
+void printaListas(queueList *q){
+    queueNode* aux = q->head;
+    socketNode* auxS;
+
+    printf("----------------------------\n");
+
+    printf("Tamanho da lista: %d\n", q->queueSize);
+
+    while(aux != NULL){
+        printf("Fila: %s\n", aux->queueName);
+        auxS = aux->socketHead;
+
+        printf("Quantidade de sockets: %d\n", aux->socketSize);
+
+        if(auxS != NULL){
+            printf("Socket: %d\n", auxS->connfd);
+            auxS = auxS->next;
+        }
+
+        while(auxS != NULL){
+            if(auxS->head)
+                break;
+            printf("Socket: %d\n", auxS->connfd);
+            auxS = auxS->next;
+        }
+        aux = aux->next;
+    }
+    printf("----------------------------\n");
 }
 
 int charToInt(char* msg, int size) {
@@ -85,6 +145,108 @@ int charToInt(char* msg, int size) {
     return valor;
 }
 
+/*Inicializa a lista de filas*/
+queueList* inicializateQueue(){
+    queueList* q = (queueList*)malloc(sizeof(queueList));
+    q->head = NULL;
+    q->queueSize = 0;
+
+    return q;
+}
+
+/*Insere uma nova fila na lista de filas depois de um amqp-queue-declare*/
+queueList* reallocQueue(queueList* q, uint8_t *queueName){
+    queueNode* aux = q->head;
+    queueNode* aux2 = NULL;
+
+    /*Enquanto ainda não olhou todos os nomes de fila*/
+    while(aux != NULL){
+        /*se já existe a fila, retorna a lista atual sem atualizar*/
+        if(aux->queueName == queueName)
+            return q;
+
+        /*Atualizamos o ponteiro para olhar o resto da lista*/
+        aux2 = aux;
+        aux = aux->next;
+    }
+
+    /*Se a fila não existe, criar um nó para ela*/
+    aux = (queueNode*)malloc(sizeof(queueNode));
+
+    /*Se a lista não tem nenhum nó, esse nó é o primeiro*/
+    if(aux2 == NULL)
+        q->head = aux;
+    /*Se não liga esse novo nó ao resto da lista de filas*/
+    else
+        aux2->next = aux;
+
+    aux->queueName = queueName;
+    aux->next = NULL;
+    aux->socketSize = 0;
+
+    aux->socketHead = NULL;
+
+    q->queueSize++;
+
+    return q;
+}
+
+/*Inscreve um socket na fila de sockets de uma lista depois de um amqp-consume*/
+void reallocSocket(queueList* q, int socket, uint8_t *queueName, uint8_t* consumerTag){
+    queueNode* aux = q->head;
+
+    /*Enquanto ainda não olhou todos os nomes de fila
+    Assume que a fila foi declarada anteriormente*/
+    while(aux != NULL){
+        /*Se encontrou a fila sai do laço para poder inscrever o consumer nela*/
+        if(strcmp((const char*)aux->queueName, (const char*)queueName) == 0)
+            break;
+
+        /*Se não, continua procurando a lista correta para inscrever o consumer*/
+        aux = aux->next;
+    }    
+
+    /*Se a fila não tem nenhum socket inscrito*/
+    if(aux->socketSize == 0){
+        aux->socketHead = (socketNode*)malloc(sizeof(socketNode));
+        aux->socketHead->connfd = socket;
+        aux->socketHead->next = NULL;
+        aux->socketHead->ant = NULL;
+        aux->socketHead->consumerTag = consumerTag;
+        aux->socketSize++;
+        aux->socketHead->head = 1;
+
+        return;
+    }
+
+    socketNode *auxS = aux->socketHead;
+
+    /*Se a fila já tem sockets inscritos, inscreve esse novo no fim da fila*/
+    socketNode *auxS2;
+    auxS2 = (socketNode*)malloc(sizeof(socketNode));
+    auxS2->connfd = socket;
+    auxS2->consumerTag = consumerTag;
+    auxS2->head = 0;
+
+    if(aux->socketSize == 1){
+        auxS->next = auxS2;
+        auxS->ant = auxS2;
+
+        auxS2->next = auxS;
+        auxS2->ant = auxS;
+    }
+    else{
+        socketNode *auxAnt = auxS->ant;
+        auxAnt->next = auxS2;
+        auxS2->ant = auxAnt;
+        auxS2->next = auxS;
+        auxS->ant = auxS2;
+    }
+
+    aux->socketSize++;
+
+}
+
 /*Gerador de Consumer-Tag aleatorizado*/
 uint8_t* generateConsumerTag(){
     int i;
@@ -94,7 +256,6 @@ uint8_t* generateConsumerTag(){
 
     srand(time(NULL));
     for(i = 0; i < size; i++){
-        /*255 é o max de uint8_t*/
         consumerTag[i] = 65 + (rand() % (122 - 65));
     }
 
@@ -109,8 +270,6 @@ int readHeader(int connfd){
 
     n = read(connfd, header, 8);
 
-    /*Envia a header de volta para o cliente*/
-
     /*Verifica se o cliente está pedindo uma conexão com a versão AMQP 0.9.1*/
     if(n <= 0 || strncmp("\x41\x4d\x51\x50\x00\x00\x09\x01", header, 8) != 0){
         /*Retorna a header correta e fecha a conexão com o socket*/
@@ -124,7 +283,7 @@ int readHeader(int connfd){
 
 /*No final arrumar aq - tem a assinatura do RabbitMQ*/
 /*Requisição de Conexão*/
-void Connection_Start(int connfd){
+void Connection_Start(int connfd){  
     char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
@@ -167,11 +326,19 @@ void Connection_Start(int connfd){
     /*write(connfd, "0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x0a, 0x00, 0x0a", 65);*/
 
     /*Connection.Start pelo cliente*/
-    n = read(connfd, request, MAX_BUFFER_SIZE);   
+    n = read(connfd, request, 7);
     if(n <= 0){
         close(connfd);
         return;
-    }     
+    }
+
+    int length = charToInt(&request[3],4);
+
+    n = read(connfd, request+7, length+1);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }   
 
 }
 
@@ -185,7 +352,15 @@ void Connection_Tune(int connfd){
             "\x00\x00\x3c\xce", 20);
 
     /*recebe Connection.Tune do cliente*/
-    n = read(connfd, request, MAX_BUFFER_SIZE);
+    n = read(connfd, request, 7);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    int length = charToInt(&request[3],4);
+
+    n = read(connfd, request+7, length+1);
     if(n <= 0){
         close(connfd);
         return;
@@ -201,7 +376,15 @@ void Connection_Open(int connfd){
     write(connfd, "\x01\x00\x00\x00\x00\x00\x05\x00\x0a\x00\x29\x00\xce", 13);
 
     /*Lê o Connection.Open enviado pelo cliente*/
-    n = read(connfd, request, MAX_BUFFER_SIZE);
+    n = read(connfd, request, 7);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    int length = charToInt(&request[3],4);
+
+    n = read(connfd, request+7, length+1);
     if(n <= 0){
         close(connfd);
         return;
@@ -217,7 +400,16 @@ void Channel_Open(int connfd){
     write(connfd, "\x01\x00\x01\x00\x00\x00\x08\x00\x14\x00\x0b\x00\x00\x00\x00\xce", 16);
 
     /*Channel.Open por parte do cliente*/
-    n = read(connfd, request, MAX_BUFFER_SIZE);
+    //n = read(connfd, request, MAX_BUFFER_SIZE);
+    n = read(connfd, request, 7);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    int length = charToInt(&request[3],4);
+
+    n = read(connfd, request+7, length+1);
     if(n <= 0){
         close(connfd);
         return;
@@ -262,7 +454,7 @@ uint8_t* Queue_Declare(int connfd, char* request){
     int size, i;
     uint8_t *queueName;
     /*Quarda o valor de retorno*/
-    uint8_t* ret;
+    uint8_t *ret;
 
     /*Casa do pacote recebido do cliente em que fica o tamanho do nome da fila*/
     size = charToInt(&(request[13]), 1);
@@ -277,6 +469,8 @@ uint8_t* Queue_Declare(int connfd, char* request){
     /*Construindo a resposta do servidor*/
 
     /*Irão ser utilizadas para construir a reposta do servidor*/
+    // pode mudar pra int
+    //htonl(totalResponseSize)
     uint8_t totalResponseSize;
     /*Tamanho do pacote (13) + tamanho do nome da fila (size) + tamanho da fila (1)*/
     totalResponseSize = 13 + size;
@@ -302,10 +496,8 @@ uint8_t* Queue_Declare(int connfd, char* request){
 
     /*Constrói o vetor de retorno
     Tamanho do nome da fila + nome da fila + quantidade de clientes(0)*/
-    ret = (uint8_t*)malloc(sizeof(uint8_t)*(size+2));
-    ret[0] = (uint8_t)size;
-    memcpy(ret+1, queueName, size);
-    ret[size+1] = (uint8_t)0;
+    ret = (uint8_t*)malloc(sizeof(uint8_t)*(size));
+    memcpy(ret, queueName, size);
 
     free(queueName);
 
@@ -313,11 +505,15 @@ uint8_t* Queue_Declare(int connfd, char* request){
 }
 
 /*This method delivers a message to the client, via a consumer.*/
-void Basic_Deliver(int connfd, uint8_t* consumerTag){
-    uint8_t length = 5 + sizeof(consumerTag) + 9 + 1;
+void Basic_Deliver(int connfd, uint8_t* consumerTag, uint8_t *routingKey, uint8_t *msg, uint8_t bodySize, uint8_t exchange, uint8_t redelivered){
+    uint8_t length = 5 + sizeof(consumerTag) + 9 + 1; // tem mais coisa
+    /*type, channel, length, class, method, consumertag*/
+    uint8_t serverResponseFinal[] = {0xce};
     uint8_t serverResponse1[] = {0x01, 0x00, 0x01, 0x00, 0x00, 0x00, length, 0x00, 0x3c, 0x00, 0x3c, (uint8_t)sizeof(consumerTag)};
-    uint8_t serverResponse2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, deliveryTag, 0x00};
-    uint8_t *serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(21+sizeof(consumerTag)));
+    /*deliveryTag, redelivered, exchangeNameSize, exchangeName, routingKeySize, routingKey*/
+    uint8_t serverResponse2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, deliveryTag, redelivered, sizeof(exchange)};
+    uint8_t serverResponse3[] = {sizeof(routingKey)};
+    uint8_t *serverResponse = (uint8_t*)malloc(sizeof(uint8_t)*(21*sizeof(consumerTag)));
 
     deliveryTag++;
 
@@ -325,23 +521,45 @@ void Basic_Deliver(int connfd, uint8_t* consumerTag){
     memcpy(serverResponse, serverResponse1, sizeof(serverResponse1));
     memcpy(serverResponse+sizeof(serverResponse1), consumerTag, (uint8_t)sizeof(consumerTag));
     memcpy(serverResponse+sizeof(serverResponse1)+sizeof(consumerTag), serverResponse2, sizeof(serverResponse2));
+    memcpy(serverResponse+sizeof(serverResponse1)+sizeof(serverResponse2)+sizeof(consumerTag), &exchange, sizeof(exchange));
+    memcpy(serverResponse+sizeof(serverResponse1)+sizeof(serverResponse2)+sizeof(consumerTag)+sizeof(exchange), serverResponse3, sizeof(serverResponse3));
+    memcpy(serverResponse+sizeof(serverResponse1)+sizeof(serverResponse2)+sizeof(consumerTag)+sizeof(exchange)+sizeof(serverResponse3), routingKey, (uint8_t)sizeof(routingKey));
+    memcpy(serverResponse+sizeof(serverResponse1)+sizeof(serverResponse2)+sizeof(consumerTag)+sizeof(exchange)+sizeof(serverResponse3)+sizeof(routingKey), serverResponseFinal, sizeof(serverResponseFinal));
 
-    /*Mandando a resposta do servidor*/
-    write(connfd, serverResponse, 21+sizeof(consumerTag));
+    /*1 - Mandando a resposta do servidor: Method(1)*/
+    write(connfd, serverResponse, 23+sizeof(consumerTag)+sizeof(routingKey)+sizeof(exchange));
 
     free(serverResponse);
+}
 
+void Basic_Ack(int connfd){
+    char request[MAX_BUFFER_SIZE];
+    ssize_t n;
+
+    /*Basic.Ack por parte do cliente*/
+    n = read(connfd, request, MAX_BUFFER_SIZE);    
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
 }
 
 /*Função do cliente*/
-void Basic_Consume(int connfd, char* request){
+uint8_t** Basic_Consume(int connfd, char* request){
 
     /*Utilizado para pegar a consumer-tag*/
     int queueNameSize, consumerTagSize, i;
-    uint8_t* consumerTag;
+    uint8_t *consumerTag, *queueName, **ret;
+
+    ret = (uint8_t**)malloc(sizeof(uint8_t*)*2);
 
     queueNameSize = charToInt(&(request[13]), 1);
     consumerTagSize = charToInt(&(request[14+queueNameSize]), 1);
+
+    queueName = (uint8_t*)malloc(sizeof(uint8_t)*queueNameSize);
+    for(i=0; i<queueNameSize; i++){
+        queueName[i] = (uint8_t)request[14+i];
+    }
 
     if(consumerTagSize == 0){
         consumerTag = generateConsumerTag();
@@ -369,14 +587,55 @@ void Basic_Consume(int connfd, char* request){
     /*Mandando a resposta do servidor*/
     write(connfd, serverResponse, 13+consumerTagSize);
 
-    Basic_Deliver(connfd, consumerTag);
+    ret[0] = queueName;
+    ret[1] = consumerTag;
+
+    return ret;
 }
 
+/*SLA SLA OQ - tem q ver se os campos q eu to olhando tão certos*/
 void Basic_Publish(int connfd, char* request){
     printf("entrou no publish\n");
-}
 
-void Basic_Ack(int connfd);
+    int i;
+
+    uint8_t exchageNameSize, routingKeySize, bodySize;
+    uint8_t *exchageName, *routingKey, *payload;    
+
+    exchageNameSize = charToInt(&(request[13]), 1);
+
+    if(exchageNameSize != 0){
+        exchageName = (uint8_t*)malloc(sizeof(uint8_t)*exchageNameSize);
+        for(i=0; i<exchageNameSize; i++){
+            exchageName[i] = (uint8_t)request[14+i];
+        }
+    }
+
+    routingKeySize = charToInt(&(request[14+exchageNameSize]), 1);
+    if(routingKeySize != 0){
+        routingKey = (uint8_t*)malloc(sizeof(uint8_t)*routingKeySize);
+        for(i=0; i<routingKeySize; i++){
+            routingKey[i] = (uint8_t)request[15+exchageNameSize+i];
+        }
+    }
+
+    bodySize = charToInt(&(request[28+exchageNameSize+routingKeySize]), 8);
+    if(bodySize != 0){
+        payload = (uint8_t*)malloc(sizeof(uint8_t)*bodySize);
+        for(i=0; i<bodySize; i++){
+            payload[i] = (uint8_t)request[39+exchageNameSize+routingKeySize+i];
+        }
+            /*printaHex(payload, bodySize);*/
+        /*Basic.Deliver*/
+        /*Basic_Deliver(connfd, routingKey, payload, bodySize);*/
+    }
+    else{
+        /*Basic_Deliver(connfd, routingKey, NULL, 0);*/
+    }
+
+
+    printf("saindo do publish\n");
+}
 
 /*Função paralelizada*/
 void *makeConnection(void *arg){
@@ -385,15 +644,11 @@ void *makeConnection(void *arg){
     int connfd = args->connfd;
 
     /*Leitura do pacote e identificação do método*/
+    //char firstFrame[7];
     char request[MAX_BUFFER_SIZE];
     int methodID;
     ssize_t n;
-
-    /*Filas
-    FAÇO ESSA BOMBA DPS*/
-    /*uint8_t* queues = NULL;
-    uint8_t retAux[8];*/
-
+    int consumer = 0;
     printf("[Uma conexão aberta]\n");
 
     if(readHeader(connfd)){
@@ -408,46 +663,67 @@ void *makeConnection(void *arg){
 
             /*Leitura da frame toda*/
             /*ERRO - A vezes da merda aqui e não sai*/
-            n = read(connfd, request, MAX_BUFFER_SIZE);
+            n = read(connfd, request, 7);
             if(n <= 0){
                 close(connfd);
                 return NULL;
             }
 
-            printf("saiu do read\n");
+            int length = charToInt(&request[3], 4);
+            printf("saiu do read1\n");
+            n = read(connfd, request+7, length + 1);
+
+            //n = read(connfd, request, MAX_BUFFER_SIZE);
+            if(n <= 0){
+                close(connfd);
+                return NULL;
+            }
 
             methodID = charToInt(&request[9], 2);
 
-            printf("%d\n", methodID);
+            printf("saiu do read2\n");
 
-            /*Criação de fila*/
+            /*Criação de fila - OK*/
             if(methodID == 10){
                 uint8_t* ret;
 
                 /*Declara a fila*/
                 ret = Queue_Declare(connfd, request);
-                /*printaHex(ret, sizeof(ret));*/
+
+                globalList = reallocQueue(globalList, ret);
 
                 /*Fecha a conexão*/
                 Channel_Close(connfd);
                 Connection_Close(connfd);
-
             }
             /*Inscrever consumidor*/
-            else if(methodID == 20) 
-                Basic_Consume(connfd, request);
+            else if(methodID == 20){
+                uint8_t **ret;
+
+                consumer = 1;
+
+                ret = Basic_Consume(connfd, request);
+
+                reallocSocket(globalList, connfd, ret[0], ret[1]);
+
+                printaListas(globalList);
+
+            }
             /*Publicar mensagem*/
-            else if(methodID == 40)
+            else if(methodID == 40){
                 Basic_Publish(connfd, request);
+                Channel_Close(connfd);
+                Connection_Close(connfd);
+            }
 
 
     }
 
-
     /*Fecha a conexão do socket*/
     printf("[Uma conexão fechada]\n");
 
-    close(connfd);
+    if(!consumer)
+        close(connfd);
 
     free(args);
 
@@ -476,6 +752,13 @@ int main (int argc, char **argv) {
         exit(2);
     }
 
+    int enableReuse = 1;
+
+    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int)) < 0) {
+        fprintf(stderr, "Erro no socket reuse\n");
+        exit(1);
+    }
+
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -494,6 +777,10 @@ int main (int argc, char **argv) {
     printf("[Servidor no ar. Aguardando conexões na porta %s]\n",argv[1]);
     printf("[Para finalizar, pressione CTRL+c ou rode um kill ou killall]\n");
    
+
+    /*Inicializa a lista de filas*/
+   globalList = inicializateQueue();
+
 	for (;;) {
 
         if ((connfd = accept(listenfd, (struct sockaddr *) NULL, NULL)) == -1 ) {
@@ -505,8 +792,7 @@ int main (int argc, char **argv) {
         struct ThreadArgs *args = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
         if (args == NULL) {
             perror("malloc :(\n");
-            close(connfd);
-            continue;
+            exit(6);
         }
         /*Assim conseguiremos ter acesso aos sockets dentro da rotina com Pthreads*/
         args->connfd = connfd;
@@ -523,11 +809,11 @@ int main (int argc, char **argv) {
             close(connfd);
         }
 
-        /*Vai liberando as threads conforme as conexões vão fechando*/
-        /*for (int i = 0; i < t; i++) {
-            pthread_join(threads[i], NULL);
-        }*/
 
+    }
+
+    for (int i = 0; i < t; i++) {
+        pthread_join(threads[i], NULL);
     }
 
     close(listenfd);

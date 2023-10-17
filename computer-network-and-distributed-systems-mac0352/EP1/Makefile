@@ -1,5 +1,5 @@
 PP=gcc
-COMPFLAGS= -Wall -pedantic -O2
+COMPFLAGS= -Wall -pedantic -O2 -g
 OTHERS= -lpthread
 
 ###################################################################################
