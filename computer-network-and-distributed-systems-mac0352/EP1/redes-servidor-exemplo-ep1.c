@@ -716,17 +716,18 @@ uint8_t** Basic_Consume(int connfd, char* request){
 void Basic_Publish(int connfd, char* request){
     int i;
 
-    uint8_t exchageNameSize, routingKeySize, bodySize;
-    uint8_t *exchageName, *routingKey, *payload;    
+    ssize_t n;
+    char aux[MAX_BUFFER_SIZE];
+    uint8_t exchageNameSize, routingKeySize;
+    uint64_t bodySize;
+    uint8_t *routingKey, *payload;    
 
+    /*Nos exemplos de captura do Wireshark a exchange é uma string vazia
+    * Default exchange: When you use default exchange, your message is delivered to the queue with a 
+    * name equal to the routing key of the message. Every queue is automatically bound to the default 
+    * exchange with a routing key which is the same as the queue name. 
+    */
     exchageNameSize = charToInt(&(request[13]), 1);
-
-    if(exchageNameSize != 0){
-        exchageName = (uint8_t*)malloc(sizeof(uint8_t)*exchageNameSize);
-        for(i=0; i<exchageNameSize; i++){
-            exchageName[i] = (uint8_t)request[14+i];
-        }
-    }
 
     routingKeySize = charToInt(&(request[14+exchageNameSize]), 1);
     routingKey = (uint8_t*)malloc(sizeof(uint8_t)*routingKeySize);
@@ -734,15 +735,40 @@ void Basic_Publish(int connfd, char* request){
         routingKey[i] = (uint8_t)request[15+exchageNameSize+i];
     }
 
-    bodySize = charToLongLong(&(request[28+exchageNameSize+routingKeySize]), 8);
+    /*Lê a segunda frame que é enviada pelo cliente no publish - content header (2)*/
+    n = read(connfd, aux, 7);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
 
-    printf("routingkey size: %d\n", routingKeySize);
-    printf("body size: %d\n", bodySize);
+    int length = charToInt(&aux[3], 4);
+    n = read(connfd, aux+7, length+1);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    bodySize = charToLongLong(&aux[11], 8);
+
+    /*Lê a terceira frame - content body (3)*/
+    n = read(connfd, aux, 7);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
+
+    length = charToInt(&aux[3], 4);
+    n = read(connfd, aux+7, length+1);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }    
 
     if(bodySize != 0){
         payload = (uint8_t*)malloc(sizeof(uint8_t)*bodySize);
-        for(i=0; i<bodySize; i++){
-            payload[i] = (uint8_t)request[39+exchageNameSize+routingKeySize+i];
+        for(uint64_t j=0; j<bodySize; j++){
+            payload[j] = (uint8_t)aux[7+j];
         }
         /*Basic.Deliver*/
         Basic_Deliver(routingKey, payload, bodySize);
