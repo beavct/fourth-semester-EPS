@@ -569,8 +569,6 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
         aux = aux->next;
     }
 
-    printf("%ld", bodySize);
-
     int consumerSocket = aux->socketHead->connfd;
     uint8_t *consumerTag = aux->socketHead->consumerTag;
     uint64_t deliveryTagQ = aux->deliveryTag;
@@ -606,7 +604,7 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     write(consumerSocket, redelivered, 1);
     write(consumerSocket, exchangeSize, 1);
     write(consumerSocket, routingKeySize, 1);
-    write(consumerSocket, routingKey, (int)sizeof(routingKey));
+    write(consumerSocket, routingKey, (uint8_t)sizeof(routingKey));
     write(consumerSocket, end, 1);
 
     /*Envia o segundo frame*/
@@ -643,7 +641,7 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     write(consumerSocket, type3, 1);
     write(consumerSocket, channel3, 2);
     write(consumerSocket, (uint8_t*)&length, 4);
-    write(consumerSocket, payload, (uint64_t)sizeof(bodySize));
+    write(consumerSocket, payload, htonll(bodySize));
     write(consumerSocket, end, 1);
 
 }
@@ -662,6 +660,8 @@ void Basic_Ack(int connfd){
     n = read(connfd, request+7, length + 1);
     if(n <= 0)
         close(connfd);
+
+    printf("leu o ack");
 }
 
 /*Função do consumidor da mensagem*/
@@ -864,9 +864,9 @@ void *makeConnection(void *arg){
             /*Publicar mensagem*/
             else if(methodID == 40){
                 Basic_Publish(connfd, request);
+                Basic_Ack(connfd);
                 Channel_Close(connfd);
                 Connection_Close(connfd);
-                Basic_Ack(connfd);
             }
 
 
