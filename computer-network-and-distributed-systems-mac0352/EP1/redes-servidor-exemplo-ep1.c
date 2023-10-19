@@ -572,8 +572,9 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     int consumerSocket = aux->socketHead->connfd;
     uint8_t *consumerTag = aux->socketHead->consumerTag;
     uint64_t deliveryTagQ = aux->deliveryTag;
+    aux->socketHead->head = 0;
     aux->socketHead = aux->socketHead->next;
-
+    aux->socketHead->head = 1;
 
 
     uint32_t length;
@@ -650,10 +651,15 @@ void Basic_Ack(int connfd){
     char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
+    printf("entrou no ack");
+
     /*Basic.Ack por parte do cliente*/
     n = read(connfd, request, 7);
     if(n <= 0)
         close(connfd);
+
+    printf("entrou no ack2");
+    
     
     int length = charToInt(&request[3], 4);
 
