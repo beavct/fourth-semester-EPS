@@ -51,7 +51,7 @@
 
 /*DEFINES NOVOS*/
 #define MAX_BUFFER_SIZE 4096
-#define NUM_THREADS 150
+#define NUM_THREADS 200
 #define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
 
 /*STRUCTS NOVAS*/
@@ -682,6 +682,45 @@ uint8_t** Basic_Consume(int connfd, char* request){
         queueName[i] = (uint8_t)request[14+i];
     }
 
+    /*Verifica se a fila solicitada foi declarada anteriormente*/
+    int success = findQueue(globalList, queueName);
+    if(!success){
+        /*Resposta para o cliente*/
+        uint32_t lengthE = 47 + queueNameSize;
+        lengthE = htonl(lengthE);
+
+        uint8_t typeE[] = {0x01};
+        uint8_t channelE[] = {0x00, 0x01};
+        uint8_t classE[] = {0x00, 0x14};
+        uint8_t methodE[] = {0x00, 0x28};
+        /*Reply-Code: 404*/
+        uint8_t replyCodeE[] = {0x01, 0x94};
+        uint8_t strSize = 22+14+queueNameSize;
+        /*str: Reply-Text: NOT_FOUND - no queue */
+        uint8_t replyTextE1[] = {0x4e, 0x4f, 0x54, 0x5f, 0x46, 0x4f, 0x55, 0x4e, 0x44, 0x20, 0x2d, 0x20, 0x6e, 0x6f, 0x20, 0x71, 0x75, 0x65, 0x75, 0x65, 0x20, 0x27};
+        /*str: in vhost '/'*/
+        uint8_t replyTextE2[] = {0x27, 0x20, 0x69, 0x6e, 0x20, 0x76, 0x68, 0x6f, 0x73, 0x74, 0x20, 0x27, 0x2f, 0x27};
+        uint8_t classIdE[] = {0x00, 0x3c};
+        uint8_t methodIdE[] = {0x00, 0x14};
+        uint8_t endE[] = {0xce}; 
+
+        write(connfd, typeE, 1);
+        write(connfd, channelE, 2);
+        write(connfd, (uint8_t*)&lengthE, 4);
+        write(connfd, classE, 2);
+        write(connfd, methodE, 2);
+        write(connfd, replyCodeE, 2);
+        write(connfd, &strSize, 1);
+        write(connfd, replyTextE1, 22);
+        write(connfd, queueName, queueNameSize);
+        write(connfd, replyTextE2, 14);
+        write(connfd, classIdE, 2);
+        write(connfd, methodIdE, 2);
+        write(connfd, endE, 1);
+
+        return NULL;
+    }
+
     if(consumerTagSize == 0){
         consumerTag = generateConsumerTag();
         consumerTagSize = (uint8_t)sizeof(consumerTag);
@@ -853,11 +892,11 @@ void *makeConnection(void *arg){
 
                 ret = Basic_Consume(connfd, request);
 
-                //int success = findQueue(globalList, (uint8_t*)request);
-                //if(!success){
-                //    printf("Essa fila não existe :(\n");
-                //    exit(7);
-                //}
+                /*Significa que a fila solicitada não foi encontrada*/
+                if(ret == NULL){
+                    close(connfd);
+                    return NULL;
+                }
                 
                 reallocSocket(globalList, connfd, ret[0], ret[1]);
 
@@ -870,7 +909,6 @@ void *makeConnection(void *arg){
                 Basic_Ack(connfd);
 
             }
-
 
     }
 
