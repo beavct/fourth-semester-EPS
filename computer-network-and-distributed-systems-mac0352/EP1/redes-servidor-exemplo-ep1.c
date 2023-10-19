@@ -569,6 +569,8 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
         aux = aux->next;
     }
 
+    printf("%ld", bodySize);
+
     int consumerSocket = aux->socketHead->connfd;
     uint8_t *consumerTag = aux->socketHead->consumerTag;
     uint64_t deliveryTagQ = aux->deliveryTag;
@@ -599,45 +601,50 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     write(consumerSocket, classs1, 2);
     write(consumerSocket, method1, 2);
     write(consumerSocket, sizeC, 1);
-    write(consumerSocket, consumerTag, (uint8_t)sizeof(consumerTag));
+    write(consumerSocket, consumerTag, (int)sizeof(consumerTag));
     write(consumerSocket, (uint8_t*)&deliveryTagQ, 8);
     write(consumerSocket, redelivered, 1);
     write(consumerSocket, exchangeSize, 1);
     write(consumerSocket, routingKeySize, 1);
-    write(consumerSocket, routingKey, (uint8_t)sizeof(routingKey));
+    write(consumerSocket, routingKey, (int)sizeof(routingKey));
     write(consumerSocket, end, 1);
 
     /*Envia o segundo frame*/
-    length = 15;
+    length = (uint32_t)15;
+    length = htonl(length);
     uint8_t type2[] = {0x02};
     uint8_t channel2[] = {0x00, 0x01};
     uint8_t classID[] = {0x00, 0x3c};
-    uint8_t weight[] = {0x00};
+    uint8_t weight[] = {0x00, 0x00};
     uint8_t propertyFlags[] = {0x10, 0x00};
     /*delivery-mode não persistente*/
     uint8_t deliveryMode[] = {0x01};
+
+    bodySize = htonll(bodySize);
 
 
     write(consumerSocket, type2, 1);
     write(consumerSocket, channel2, 2);
     write(consumerSocket, (uint8_t*)&length, 4);
     write(consumerSocket, classID, 2);
-    write(consumerSocket, weight, 1);
+    write(consumerSocket, weight, 2);
     write(consumerSocket, (uint8_t*)&bodySize, 8);
     write(consumerSocket, propertyFlags, 2);
     write(consumerSocket, deliveryMode, 1);
+    write(consumerSocket, end, 1);
 
 
     /*Envia a terceira frame*/
-    length = (uint32_t)sizeof(bodySize);
+    length = (uint32_t)htonll(bodySize);
+    length = htonl(length);
     uint8_t type3[] = {0x03};
     uint8_t channel3[] = {0x00, 0x01};
 
     write(consumerSocket, type3, 1);
     write(consumerSocket, channel3, 2);
     write(consumerSocket, (uint8_t*)&length, 4);
-    write(consumerSocket, payload, (int)sizeof(bodySize));
-
+    write(consumerSocket, payload, (uint64_t)sizeof(bodySize));
+    write(consumerSocket, end, 1);
 
 }
 
@@ -719,8 +726,8 @@ void Basic_Publish(int connfd, char* request){
     ssize_t n;
     char aux[MAX_BUFFER_SIZE];
     uint8_t exchageNameSize, routingKeySize;
-    uint64_t bodySize;
-    uint8_t *routingKey, *payload;    
+    uint64_t bodySize = 0;
+    uint8_t *routingKey, *payload = NULL;    
 
     /*Nos exemplos de captura do Wireshark a exchange é uma string vazia
     * Default exchange: When you use default exchange, your message is delivered to the queue with a 
@@ -751,6 +758,7 @@ void Basic_Publish(int connfd, char* request){
 
     bodySize = charToLongLong(&aux[11], 8);
 
+
     /*Lê a terceira frame - content body (3)*/
     n = read(connfd, aux, 7);
     if(n <= 0){
@@ -770,13 +778,18 @@ void Basic_Publish(int connfd, char* request){
         for(uint64_t j=0; j<bodySize; j++){
             payload[j] = (uint8_t)aux[7+j];
         }
-        /*Basic.Deliver*/
-        Basic_Deliver(routingKey, payload, bodySize);
-    }
-    else{
-        Basic_Deliver(routingKey, NULL, 0);
     }
 
+    /*Lê o Channel.Close que o cliente manda*/
+    n = read(connfd, request, 7);
+    if(n <= 0){
+        close(connfd);
+    }
+
+    length = charToInt(&request[3], 4);
+    n = read(connfd, request+7, length + 1);
+
+    Basic_Deliver(routingKey, payload, bodySize);
 }
 
 /*Função paralelizada*/
@@ -846,8 +859,6 @@ void *makeConnection(void *arg){
                 //}
                 
                 reallocSocket(globalList, connfd, ret[0], ret[1]);
-
-                printaListas(globalList);
 
             }
             /*Publicar mensagem*/
