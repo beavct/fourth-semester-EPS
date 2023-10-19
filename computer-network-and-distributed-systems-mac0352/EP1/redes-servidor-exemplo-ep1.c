@@ -260,21 +260,6 @@ void reallocSocket(queueList* q, int socket, uint8_t *queueName, uint8_t* consum
     auxS2->consumerTag = consumerTag;
     auxS2->head = 0;
 
-    //if(aux->socketSize == 1){
-    //    auxS->next = auxS2;
-    //    auxS->ant = auxS2;
-//
-    //    auxS2->next = auxS;
-    //    auxS2->ant = auxS;
-    //}
-    //else{
-    //    socketNode *auxAnt = auxS->ant;
-    //    auxAnt->next = auxS2;
-    //    auxS2->ant = auxAnt;
-    //    auxS2->next = auxS;
-    //    auxS->ant = auxS2;
-    //}
-
     socketNode *auxAnt = auxS->ant;
     auxAnt->next = auxS2;
     auxS2->ant = auxAnt;
@@ -360,8 +345,22 @@ void Connection_Start(int connfd){
         "\x50\x4c\x41\x49\x4e\x20\x41\x4d\x51\x50\x4c\x41\x49\x4e\x00\x00" \
         "\x00\x05\x65\x6e\x5f\x55\x53\xce", 520);
 
-    /*write(connfd, "0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x0a, 0x00, 0x0a", 64);
-    write(connfd, "0x64, 0x61, 0x6e, 0x69, 0x65, 0x6c, 0x20, 0x6d, 0x65, 0x20, 0x64, 0x61, 0x20, 0x31, 0x30, 0x20, 0x70, 0x66, 0x76, 0x21", 118);*/
+    /*write(connfd, "\x01\x00\x00\x00\x00\x02\x00\x00\x0a\x00\x0a\x00\x09\x00\x00\x01" \
+        "\xdb\x0c\x63\x61\x70\x61\x62\x69\x6c\x69\x74\x69\x65\x73\x46\x00" \
+        "\x00\x00\xc7\x12\x70\x75\x62\x6c\x69\x73\x68\x65\x72\x5f\x63\x6f" \
+        "\x6e\x66\x69\x72\x6d\x73\x74\x01\x1a\x65\x78\x63\x68\x61\x6e\x67" \
+        "\x65\x5f\x65\x78\x63\x68\x61\x6e\x67\x65\x5f\x62\x69\x6e\x64\x69" \
+        "\x6e\x67\x73\x74\x01\x0a\x62\x61\x73\x69\x63\x2e\x6e\x61\x63\x6b" \
+        "\x74\x01\x16\x63\x6f\x6e\x73\x75\x6d\x65\x72\x5f\x63\x61\x6e\x63" \
+        "\x65\x6c\x5f\x6e\x6f\x74\x69\x66\x79\x74\x01\x12\x63\x6f\x6e\x6e" \
+        "\x65\x63\x74\x69\x6f\x6e\x2e\x62\x6c\x6f\x63\x6b\x65\x64\x74\x01" \
+        "\x13\x63\x6f\x6e\x73\x75\x6d\x65\x72\x5f\x70\x72\x69\x6f\x72\x69" \
+        "\x74\x69\x65\x73\x74\x01\x1c\x61\x75\x74\x68\x65\x6e\x74\x69\x63" \
+        "\x61\x74\x69\x6f\x6e\x5f\x66\x61\x69\x6c\x75\x72\x65\x5f\x63\x6c" \
+        "\x6f\x73\x65\x74\x01\x10\x70\x65\x72\x5f\x63\x6f\x6e\x73\x75\x6d" \
+        "\x65\x72\x5f\x71\x6f\x73\x74\x01\x0f\x64\x69\x72\x65\x63\x74\x5f" \
+        "\x72\x65\x70\x6c\x79\x5f\x74\x6f\x74\x01\xce", 235);*/
+
 
     /*Connection.Start pelo cliente*/
     n = read(connfd, request, 7);
@@ -454,23 +453,25 @@ void Channel_Open(int connfd){
     }
 }
 
-void Channel_Close(int connfd){
+void Channel_Close(int connfd, int publish){
     char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
     /*Channel.Close por parte do cliente*/
-    n = read(connfd, request, 7);
-    if(n <= 0){
-        close(connfd);
-        return;
-    }
+    if(!publish){
+        n = read(connfd, request, 7);
+        if(n <= 0){
+            close(connfd);
+            return;
+        }
 
-    int length = charToInt(&request[3],4);
+        int length = charToInt(&request[3],4);
 
-    n = read(connfd, request+7, length+1);
-    if(n <= 0){
-        close(connfd);
-        return;
+        n = read(connfd, request+7, length+1);
+        if(n <= 0){
+            close(connfd);
+            return;
+        }
     }
 
     /*Servidor manda Channel.Close-OK*/
@@ -647,27 +648,21 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
 
 }
 
+/*Confirmação de que o cliente recebeu as mensagens e as processou com sucesso*/
 void Basic_Ack(int connfd){
     char request[MAX_BUFFER_SIZE];
     ssize_t n;
-
-    printf("entrou no ack");
 
     /*Basic.Ack por parte do cliente*/
     n = read(connfd, request, 7);
     if(n <= 0)
         close(connfd);
 
-    printf("entrou no ack2");
-    
-    
     int length = charToInt(&request[3], 4);
 
-    n = read(connfd, request+7, length + 1);
+    n = read(connfd, request+7, length+1);
     if(n <= 0)
         close(connfd);
-
-    printf("leu o ack");
 }
 
 /*Função do consumidor da mensagem*/
@@ -809,7 +804,7 @@ void *makeConnection(void *arg){
     int methodID;
     ssize_t n;
     int consumer = 0;
-    printf("[Uma conexão aberta]\n");
+    //printf("[Uma conexão aberta]\n");
 
     if(readHeader(connfd)){
 
@@ -847,7 +842,7 @@ void *makeConnection(void *arg){
                 globalList = reallocQueue(globalList, ret);
 
                 /*Fecha a conexão*/
-                Channel_Close(connfd);
+                Channel_Close(connfd, 0);
                 Connection_Close(connfd);
             }
             /*Inscrever consumidor*/
@@ -870,9 +865,10 @@ void *makeConnection(void *arg){
             /*Publicar mensagem*/
             else if(methodID == 40){
                 Basic_Publish(connfd, request);
-                Basic_Ack(connfd);
-                Channel_Close(connfd);
+                Channel_Close(connfd, 1);
                 Connection_Close(connfd);
+                Basic_Ack(connfd);
+
             }
 
 
@@ -883,14 +879,13 @@ void *makeConnection(void *arg){
     if(!consumer){
             /*Fecha a conexão do socket*/
             close(connfd);
-            printf("[Uma conexão fechada]\n");
+            //printf("[Uma conexão fechada]\n");
     }
 
     free(args);
 
     return NULL;
 }
-
 
 int main (int argc, char **argv) {
     int listenfd, connfd;

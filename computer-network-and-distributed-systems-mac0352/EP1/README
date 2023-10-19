@@ -23,7 +23,7 @@ Para inscrever um consumidor em uma fila existente execute o seguinte comando:
 ~ amqp-consume -q <nome da fila> cat
 
 Para publicar uma mensagem em uma fila existente que possui consumidores cadastrados execute o seguinte comando:
-~ amqp-publish -r <nome da fila> -body="<mensagem>"
+~ amqp-publish -r <nome da fila> -b "<mensagem>"
 
 
 TESTES:
