@@ -570,6 +570,10 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
         aux = aux->next;
     }
 
+    /*Não encontrou a fila na lista de filas ou a fila não tem sockets cadastrados, então só sai e fecha a conexão*/
+    if(aux ==  NULL || aux->socketSize == 0)
+        return;
+
     int consumerSocket = aux->socketHead->connfd;
     uint8_t *consumerTag = aux->socketHead->consumerTag;
     uint64_t deliveryTagQ = aux->deliveryTag;
@@ -609,7 +613,7 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     write(consumerSocket, routingKey, (uint8_t)sizeof(routingKey));
     write(consumerSocket, end, 1);
 
-    /*Envia o segundo frame*/
+    /*Envia o segundo frame - content-header*/
     length = (uint32_t)15;
     length = htonl(length);
     uint8_t type2[] = {0x02};
@@ -634,7 +638,7 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     write(consumerSocket, end, 1);
 
 
-    /*Envia a terceira frame*/
+    /*Envia a terceira frame - content-body*/
     length = (uint32_t)htonll(bodySize);
     length = htonl(length);
     uint8_t type3[] = {0x03};
@@ -645,7 +649,6 @@ void Basic_Deliver(uint8_t *routingKey, uint8_t *payload, uint64_t bodySize){
     write(consumerSocket, (uint8_t*)&length, 4);
     write(consumerSocket, payload, htonll(bodySize));
     write(consumerSocket, end, 1);
-
 }
 
 /*Confirmação de que o cliente recebeu as mensagens e as processou com sucesso*/
@@ -830,6 +833,8 @@ void Basic_Publish(int connfd, char* request){
     n = read(connfd, request+7, length + 1);
 
     Basic_Deliver(routingKey, payload, bodySize);
+    //Channel_Close(connfd, 1);
+    //Connection_Close(connfd);
 }
 
 /*Função paralelizada*/
@@ -904,14 +909,13 @@ void *makeConnection(void *arg){
             /*Publicar mensagem*/
             else if(methodID == 40){
                 Basic_Publish(connfd, request);
+                //sleep(1);
                 Channel_Close(connfd, 1);
                 Connection_Close(connfd);
                 Basic_Ack(connfd);
-
             }
 
     }
-
 
     /*Se for um consumidor ele fica esperando chegar mensagens*/
     if(!consumer){
