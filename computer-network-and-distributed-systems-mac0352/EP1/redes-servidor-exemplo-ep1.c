@@ -39,6 +39,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 
 /*BIBLIOTECAS NOVAS*/
@@ -152,6 +153,51 @@ uint64_t charToLongLong(char* msg, int size){
     return valor;    
 }
 
+/*Remove um consumer quando ele pressiona Ctrl-C no terminal*/
+void removeConsumer(int connfd, uint8_t* queueName){
+    close(connfd);
+    queueNode *qAux = globalList->head;
+
+    /*Percorre a estrutura de filas para encontrar a fila que tem que remover o consumidor*/
+    while(qAux != NULL){
+        if(strcmp((const char*)qAux->queueName, (const char*)queueName)==0){
+            int sAux = qAux->socketSize;
+            socketNode *socketAux = qAux->socketHead;
+
+            /*Procura o consumidor na lista de filas*/
+            for(int i=0; i<sAux; i++){
+                if(socketAux->connfd == connfd){
+                    /*De fato remove o consumidor da lista ligada circular*/
+                    if(sAux == 1)
+                        qAux->socketHead = NULL;
+                    else {
+                        socketNode *socketAux1 = socketAux->ant;
+                        socketNode *socketAux2 = socketAux->next;
+
+                        socketAux1->next = socketAux2;
+                        socketAux2->ant = socketAux1;
+                        
+                        /*Se o nó que estamos removendo for head, temos que atualizar a head*/
+                        if(socketAux->head){
+                            socketAux2->head = 1;
+                            qAux->socketHead = socketAux2;
+                        }
+                    }
+
+                    qAux->socketSize--;    
+
+                    break;
+                }
+
+                socketAux = socketAux->next;
+            }
+        }
+
+        qAux = qAux->next;
+    }
+
+}
+
 /*Inicializa a lista de filas*/
 queueList* inicializateQueue(){
     queueList* q = (queueList*)malloc(sizeof(queueList));
@@ -230,11 +276,6 @@ void reallocSocket(queueList* q, int socket, uint8_t *queueName, uint8_t* consum
         /*Se não, continua procurando a lista correta para inscrever o consumer*/
         aux = aux->next;
     }    
-
-    /*Chegamos no final da lista de filas e não encontramos a fila correta
-    Então ela não foi declarada anteriormente e o socket é fechado*/
-    //if(aux == NULL)
-    //    return 0;
 
     /*Se a fila não tem nenhum socket inscrito*/
     if(aux->socketSize == 0){
@@ -453,25 +494,23 @@ void Channel_Open(int connfd){
     }
 }
 
-void Channel_Close(int connfd, int publish){
+void Channel_Close(int connfd){
     char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
     /*Channel.Close por parte do cliente*/
-    if(!publish){
-        n = read(connfd, request, 7);
-        if(n <= 0){
-            close(connfd);
-            return;
-        }
+    n = read(connfd, request, 7);
+    if(n <= 0){
+        close(connfd);
+        return;
+    }
 
-        int length = charToInt(&request[3],4);
+    int length = charToInt(&request[3],4);
 
-        n = read(connfd, request+7, length+1);
-        if(n <= 0){
-            close(connfd);
-            return;
-        }
+    n = read(connfd, request+7, length+1);
+    if(n <= 0){
+        close(connfd);
+        return;
     }
 
     /*Servidor manda Channel.Close-OK*/
@@ -762,7 +801,7 @@ uint8_t** Basic_Consume(int connfd, char* request){
     return ret;
 }
 
-/*SLA SLA OQ - tem q ver se os campos q eu to olhando tão certos*/
+/*publica a mensagem na fila especificada pelo cliente*/
 void Basic_Publish(int connfd, char* request){
     int i;
 
@@ -823,18 +862,7 @@ void Basic_Publish(int connfd, char* request){
         }
     }
 
-    /*Lê o Channel.Close que o cliente manda*/
-    n = read(connfd, request, 7);
-    if(n <= 0){
-        close(connfd);
-    }
-
-    length = charToInt(&request[3], 4);
-    n = read(connfd, request+7, length + 1);
-
     Basic_Deliver(routingKey, payload, bodySize);
-    //Channel_Close(connfd, 1);
-    //Connection_Close(connfd);
 }
 
 /*Função paralelizada*/
@@ -848,7 +876,7 @@ void *makeConnection(void *arg){
     int methodID;
     ssize_t n;
     int consumer = 0;
-    //printf("[Uma conexão aberta]\n");
+    uint8_t **retC = NULL;
 
     if(readHeader(connfd)){
 
@@ -886,42 +914,50 @@ void *makeConnection(void *arg){
                 globalList = reallocQueue(globalList, ret);
 
                 /*Fecha a conexão*/
-                Channel_Close(connfd, 0);
+                Channel_Close(connfd);
                 Connection_Close(connfd);
             }
             /*Inscrever consumidor*/
             else if(methodID == 20){
-                uint8_t **ret;
-
                 consumer = 1;
 
-                ret = Basic_Consume(connfd, request);
+                retC = Basic_Consume(connfd, request);
 
                 /*Significa que a fila solicitada não foi encontrada*/
-                if(ret == NULL){
+                if(retC == NULL){
                     close(connfd);
                     return NULL;
                 }
                 
-                reallocSocket(globalList, connfd, ret[0], ret[1]);
+                reallocSocket(globalList, connfd, retC[0], retC[1]);
 
             }
             /*Publicar mensagem*/
             else if(methodID == 40){
                 Basic_Publish(connfd, request);
-                //sleep(1);
-                Channel_Close(connfd, 1);
+                Channel_Close(connfd);
                 Connection_Close(connfd);
                 Basic_Ack(connfd);
             }
 
     }
 
-    /*Se for um consumidor ele fica esperando chegar mensagens*/
+    printaListas(globalList);
+
+    /*Se for um consumidor ele fica esperando chegar mensagens até apertar Ctrl-C*/
     if(!consumer){
             /*Fecha a conexão do socket*/
             close(connfd);
-            //printf("[Uma conexão fechada]\n");
+    }
+    else{
+        int n;
+        int recvline[MAX_BUFFER_SIZE];
+        while((n = read(connfd, recvline, MAX_BUFFER_SIZE))){
+        }
+
+        if(n ==0)
+            removeConsumer(connfd, retC[0]);
+        printaListas(globalList);
     }
 
     free(args);
