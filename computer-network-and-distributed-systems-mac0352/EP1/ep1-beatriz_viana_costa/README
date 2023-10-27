@@ -1,0 +1,36 @@
+AUTOR:
+Nome: Beatriz Viana Costa
+NUSP: 13673214
+E-mail: beatrizvianacosta@usp.br
+
+
+DESCRIÇÃO:
+O seguinte programa funciona como um servidor AMQP de interpreta os comandos deste mesmo protocolo.
+Dessa forma, é possível declarar filas, cadastrar consumidores e publicar mensagem por meio de terminais, sejam no localhost ou em máquinas com IPs diferentes.
+
+
+COMO EXECUTAR:
+Para a compilação do programa basta executar o seguinte comando no terminal:
+~/ make
+Após para a execução do servidor basta executar:
+~/ ./ep1 5672
+Assim, esse terminal estará tendo o papel de um servidor, ouvindo na porta 5672.
+
+Para declarar uma fila execute o seguinte comando:
+~/ amqp-declare-queue -q <nome da fila>
+
+Para inscrever um consumidor em uma fila existente execute o seguinte comando:
+~/ amqp-consume -q <nome da fila> cat
+
+Para publicar uma mensagem em uma fila existente que possui consumidores cadastrados execute o seguinte comando:
+~/ amqp-publish -r <nome da fila> -b "<mensagem>"
+
+
+Para encerrar o servidor ou desconectar um consumer basta pressionar Ctrl C
+
+DEPENDÊNCIAS:
+Sistema Operacional: Manjaro Linux 23.0.4 Uranos
+CPU: 12th Gen Intel(R) Core(TM) i7-1255U
+gcc (GCC) 13.2.1 20230801
+GNU Make 4.4.1
+librabbitmq-c-0.11.0-2

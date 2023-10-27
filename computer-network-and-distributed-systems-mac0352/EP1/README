@@ -6,7 +6,7 @@ E-mail: beatrizvianacosta@usp.br
 
 DESCRIÇÃO:
 O seguinte programa funciona como um servidor AMQP de interpreta os comandos deste mesmo protocolo.
-Dessa forma, é possível declarar filas, cadastrar consumidores e publicar mensagem por meio de terminais.
+Dessa forma, é possível declarar filas, cadastrar consumidores e publicar mensagem por meio de terminais, sejam no localhost ou em máquinas com IPs diferentes.
 
 
 COMO EXECUTAR:
@@ -26,9 +26,7 @@ Para publicar uma mensagem em uma fila existente que possui consumidores cadastr
 ~ amqp-publish -r <nome da fila> -b "<mensagem>"
 
 
-TESTES:
-
-
+Para encerrar o servidor ou desconectar um consumer basta pressionar Ctrl C
 
 DEPENDÊNCIAS:
 Sistema Operacional: Manjaro Linux 23.0.4 Uranos

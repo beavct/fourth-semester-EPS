@@ -1,15 +1,17 @@
 PP=gcc
 COMPFLAGS= -Wall -pedantic -O2
-OTHERS= -lpthread
+OTHERS= extraFunctions.c -lpthread
 
 ###################################################################################
 
-OBJS= 
-MAIN= redes-servidor-exemplo-ep1.c
+OBJS= extraFunctions.o
+MAIN= main.c
 
 ###################################################################################
 
 all: ep
+
+extraFunctions.o: extraFunctions.c
 
 main.o: redes-servidor-exemplo-ep1.c
 
