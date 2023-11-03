@@ -606,20 +606,22 @@ void Basic_Deliver(queueList *globalList, uint8_t *routingKey, uint8_t *payload,
 }
 
 /*Confirmação de que o cliente recebeu as mensagens e as processou com sucesso*/
-void Basic_Ack(int connfd){
+int Basic_Ack(int connfd){
     char request[MAX_BUFFER_SIZE];
     ssize_t n;
 
     /*Basic.Ack por parte do cliente*/
     n = read(connfd, request, 7);
     if(n <= 0)
-        close(connfd);
+        return 0;
 
     int length = charToInt(&request[3], 4);
 
     n = read(connfd, request+7, length+1);
     if(n <= 0)
-        close(connfd);
+        return 0;
+
+    return 1;
 }
 
 /*Função do consumidor da mensagem*/

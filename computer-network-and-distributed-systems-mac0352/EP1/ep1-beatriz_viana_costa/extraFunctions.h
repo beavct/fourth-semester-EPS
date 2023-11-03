@@ -50,6 +50,6 @@ void Channel_Close(int connfd);
 void Connection_Close(int connfd);
 uint8_t* Queue_Declare(int connfd, char* request);
 void Basic_Deliver(queueList *globalList, uint8_t *routingKey, uint8_t *payload, uint64_t bodySize);
-void Basic_Ack(int connfd);
+int Basic_Ack(int connfd);
 uint8_t** Basic_Consume(queueList *globalList, int connfd, char* request);
 void Basic_Publish(queueList *globalList, int connfd, char* request);

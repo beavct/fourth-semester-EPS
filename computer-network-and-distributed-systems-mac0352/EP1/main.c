@@ -190,7 +190,6 @@ void *makeConnection(void *arg){
                 Basic_Publish(globalList, connfd, request);
                 Channel_Close(connfd);
                 Connection_Close(connfd);
-                Basic_Ack(connfd);
             }
 
     }
@@ -202,12 +201,10 @@ void *makeConnection(void *arg){
             close(connfd);
     }
     else{
-        int n;
-        int recvline[MAX_BUFFER_SIZE];
+        int n = 1;
 
         /*Espera o consumer dar Ctrl-C*/
-        while((n = read(connfd, recvline, MAX_BUFFER_SIZE))){
-        }
+        while((n = Basic_Ack(connfd))){}
 
         /*Remove o socket do consumer da lista de sockets da fila especifica*/
         if(n ==0)
