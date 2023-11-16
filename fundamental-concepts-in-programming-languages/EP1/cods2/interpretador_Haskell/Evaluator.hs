@@ -1,6 +1,7 @@
 module Evaluator where
 
 import Types (Env, Binding (Binding), ExprC (..), Value (..))
+import Tokenizer(trueOrFalse)
 import Env (extendEnv, lookupEnv)
 
 -- | Avaliador.
@@ -51,16 +52,17 @@ eval exp env = case exp of
       closure  = eval fun env
       argvalue = eval arg env
   IfC cond b1 b2 ->
-    case eval cond env of
-      NumV num ->
-        if num /= 0
+    if isBool cond
+      then if trueOrFalse
           then eval b1 env
           else eval b2 env
-      ---BoolV bool ->
-      ---  if bool /= 0
-      ---    then eval b1 env
-      ---    else eval b2 env
-      _ -> error "ERRO eval IfC: condição não é um número"
+    else 
+      ( case eval cond env of
+        NumV num ->
+          if num /= 0
+            then eval b1 env
+            else eval b2 env )
+    _ -> error "ERRO eval IfC: condição não é um número nem booleano"
   ConsC e1 e2    -> ConsV (eval e1 env) (eval e2 env)
   HeadC e        ->
     case eval e env of

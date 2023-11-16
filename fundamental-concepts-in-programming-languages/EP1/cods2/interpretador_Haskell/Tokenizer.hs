@@ -89,7 +89,7 @@ isBool "true" = True
 isBool "false" = True
 isBool _ = False
 
--- Transforma a string em booleano
-boolExpr  :: String -> Bool
-boolExpr "true" = BoolS True
-boolExpr "false" = BoolS False
+-- retorna o valor do booleano
+trueOrFalse :: String -> Bool
+trueOrFalse "true" = True
+trueOrFalse "false" = False

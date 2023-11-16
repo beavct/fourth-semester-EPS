@@ -2,8 +2,8 @@ module Parser where
 
 import Text.Read (readMaybe)
 
-import Tokenizer (isNumeral, isSymbol, isBool, boolExpr)
-import Types (Token, ParseTree (..), ExprS (..))
+import Tokenizer (isNumeral, isSymbol, isBool, trueOrFalse)
+import Types (Token, ParseTree (..), ExprS (..), ExprC (BoolC))
 
 -- | O parser transforma uma lista de tokens em uma árvora sintática.
 -- Ele é responsável pela análise sintática da linguagem.
@@ -78,7 +78,6 @@ analyze tree = case tree of
         Just num -> NumS num
         Nothing -> error ("ERRO analyze: número inválido: " ++ token)
     | isSymbol token -> IdS token
-    | isBool token -> boolExpr token
     | otherwise -> error "ERRO analyze: token inválido"
   Pair first rest -> case first of
     Leaf "+" -> PlusS (analyzePos 1) (analyzePos 2)
@@ -108,6 +107,16 @@ analyze tree = case tree of
       getSymbol i = case tree `index` i of
         Leaf symbol -> symbol
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
+
+
+      verifyId :: String -> [a] -> Bool
+      verifyId id palavras = not (isNumeral (take 1 id)) && id `notElem` palavras
+  
+      notElem :: Eq a => a -> [a] -> Bool
+      notElem _ [] = True
+      notElem id (x:xs)
+        | id == x = False
+        | otherwise = id `notElem` xs   
 
 -- | Função auxiliar de `analyze` para indexação na `ParseTree`.
 -- 
