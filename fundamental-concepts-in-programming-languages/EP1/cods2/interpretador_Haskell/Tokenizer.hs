@@ -82,3 +82,14 @@ isNumeralChar = (`elem` numerals)
 -- Verifica se uma String é composta somente por caracteres válidos de números.
 isNumeral :: String -> Bool
 isNumeral = all isNumeralChar
+
+-- Verifica se uma string é um booleano
+isBool    :: String -> Bool
+isBool "true" = True
+isBool "false" = True
+isBool _ = False
+
+-- Transforma a string em booleano
+boolExpr  :: String -> Bool
+boolExpr "true" = BoolS True
+boolExpr "false" = BoolS False

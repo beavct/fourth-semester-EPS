@@ -56,6 +56,10 @@ eval exp env = case exp of
         if num /= 0
           then eval b1 env
           else eval b2 env
+      ---BoolV bool ->
+      ---  if bool /= 0
+      ---    then eval b1 env
+      ---    else eval b2 env
       _ -> error "ERRO eval IfC: condição não é um número"
   ConsC e1 e2    -> ConsV (eval e1 env) (eval e2 env)
   HeadC e        ->
@@ -79,4 +83,6 @@ eval exp env = case exp of
     where
       closure = eval val env
   QuoteC sym -> SymV sym
-  BoolC b1   -> eval b1 env
+
+    -- MODIFICAÇÃO
+  ---BoolS bool   -> BoolC bool

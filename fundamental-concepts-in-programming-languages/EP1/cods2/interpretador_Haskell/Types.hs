@@ -132,8 +132,9 @@ data ExprS
     LetrecS  { nameS :: String, valS :: ExprS, bodyS :: ExprS }
   | -- | Transforma qualquer elemento da linguagem em um símbolo.
     QuoteS   { symbolS :: String }
-  | 
-    BoolS    { bodyS ::  ExprS}
+    -- MODIFICAÇÃO
+  |
+    BoolS    { boolS :: Bool }
   deriving (Show, Eq)
 
 -- | Árvore sintática com marcações de semântica, depois do processo
@@ -186,8 +187,10 @@ data ExprC
     LetrecC { funNameC :: String, argC :: ExprC, bodyC :: ExprC }
   | -- | Transforma qualquer elemento da linguagem em um símbolo.
     QuoteC  { symbolC :: String }
+
+    -- MODIFICAÇÃO
   | 
-    BoolC   { bodyC   :: ExprC}
+    BoolC   { boolC   :: Bool }
   deriving (Show, Eq)
 
 -- | Valores primitivos da linguagem.

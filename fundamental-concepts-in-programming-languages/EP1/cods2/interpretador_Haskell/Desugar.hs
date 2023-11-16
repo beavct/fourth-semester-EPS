@@ -51,4 +51,6 @@ desugar expr = case expr of
       (desugar val2)
   LetrecS name val body -> LetrecC name (desugar val) (desugar body)
   QuoteS symbol -> QuoteC symbol
-  BoolS b1      -> BoolC (desugar b1)
+
+    -- MODIFICAÇÃO
+  BoolS bool -> BoolC bool
