@@ -52,8 +52,8 @@ eval exp env = case exp of
       closure  = eval fun env
       argvalue = eval arg env
   IfC cond b1 b2 ->
-    if isBool cond
-      then if trueOrFalse
+    if isBool cond 
+      then if trueOrFalse cond
           then eval b1 env
           else eval b2 env
     else 
@@ -61,8 +61,8 @@ eval exp env = case exp of
         NumV num ->
           if num /= 0
             then eval b1 env
-            else eval b2 env )
-    _ -> error "ERRO eval IfC: condição não é um número nem booleano"
+            else eval b2 env
+        _ -> error "ERRO eval IfC: condição não é um número nem booleano" )
   ConsC e1 e2    -> ConsV (eval e1 env) (eval e2 env)
   HeadC e        ->
     case eval e env of

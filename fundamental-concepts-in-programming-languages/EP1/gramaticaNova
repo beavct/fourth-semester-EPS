@@ -75,10 +75,19 @@
                 | "f" 
                 | "f" "a" 
                 | "f" "a" "l" 
-                | "f" "a" "l" "s"   
+                | "f" "a" "l" "s"  
+<notQuote>      ::=  "q" <notU> <idChars>*
+                | "q" "u" <notO> <idChars>*
+                | "q" "u" "o" <notT> <idChars>*
+                | "q" "u" "o" "t" <notE> <idChars>*
+                | "q" "u" "o" "t" "e" <idChars>+
+                | "q"
+                | "q" "u" 
+                | "q" "u" "o" 
+                | "q" "u" "o" "t"
 
 /*TUDO*/
-<notReserved>      ::= ( "a" | "b" | "d" | "e" | "g" | "j" | "k" | [m-s] | [u-z] ) <idChars>*
+<notReserved>      ::= ( "a" | "b" | "d" | "e" | "g" | "j" | "k" | [m-p] | [r-s] | [u-z] ) <idChars>*
                 | <notCons>
                 | <notHead>
                 | <notTail>
@@ -89,6 +98,7 @@
                 | <notCall>
                 | <notTrue>
                 | <notFalse>
+                | <notQuote>
 
 
 /* NOT LETTERS*/
