@@ -1,7 +1,7 @@
 module Evaluator where
 
 import Types (Env, Binding (Binding), ExprC (..), Value (..))
-import Tokenizer(trueOrFalse)
+import Tokenizer(isBool, trueOrFalse)
 import Env (extendEnv, lookupEnv)
 
 -- | Avaliador.

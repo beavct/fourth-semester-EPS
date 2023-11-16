@@ -105,7 +105,7 @@ analyze tree = case tree of
       -- | Função auxiliar que retorna o símbolo encontrado na posição `i` da árvore.
       getSymbol :: Int -> String
       getSymbol i = case tree `index` i of
-        if verifyId Leaf symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"]
+        if verifyId Leaf symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] -> Leaf symbol
         /*Leaf symbol -> symbol*/
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
 
