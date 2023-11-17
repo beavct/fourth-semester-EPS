@@ -2,7 +2,7 @@ module Parser where
 
 import Text.Read (readMaybe)
 
-import Tokenizer (isNumeral, isSymbol, isBool)
+import Tokenizer (isNumeral, isSymbol, isBool, isNumeralChar)
 import Types (Token, ParseTree (..), ExprS (..))
 
 -- | O parser transforma uma lista de tokens em uma árvora sintática.
@@ -106,21 +106,28 @@ analyze tree = case tree of
       -- | Função auxiliar que retorna o símbolo encontrado na posição `i` da árvore.
       getSymbol :: Int -> String
       getSymbol i = case tree `index` i of
-        Leaf symbol -> symbol
-      --  if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] 
-      --    then symbol
-      --    else error "ERRO analyze: símbolo esperado no lugar de uma expressão1"
+        Leaf symbol -> 
+          if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"]
+            then error "ERRO analyze: identificador não aceito"
+            else symbol
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
 
 
       verifyId :: String -> [String] -> Bool
-      verifyId id palavras = not (isNumeral (take 1 id)) || id `notElem` palavras
+      verifyId id palavras = (isFirstCharNumeric id || id `notElem` palavras)
+
   
       notElem :: Eq a => a -> [a] -> Bool
-      notElem _ [] = True
+      notElem _ [] = False
       notElem id (x:xs)
-        | id == x = False
+        | id == x = True
         | otherwise = id `notElem` xs   
+      
+      isFirstCharNumeric :: String -> Bool
+      isFirstCharNumeric [] = False
+      isFirstCharNumeric (c:_) = isNumeralChar c
+
+
 
 -- | Função auxiliar de `analyze` para indexação na `ParseTree`.
 -- 

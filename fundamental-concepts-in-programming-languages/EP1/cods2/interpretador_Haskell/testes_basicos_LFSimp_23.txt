@@ -77,6 +77,12 @@
 (quote 10)
 (quote casa)
 
+(let call 1 (+ call 5)) 
+(let lambda 1 (+ lambda 5)) 
+(let a 1)
+(let lambda 1)
+(let call 1 (+ call 5)) 
+(let 1432b 1 (+ 1b 5)) 
 
 
 
