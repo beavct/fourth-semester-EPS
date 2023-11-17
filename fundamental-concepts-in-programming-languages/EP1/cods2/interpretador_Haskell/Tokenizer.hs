@@ -88,8 +88,3 @@ isBool    :: String -> Bool
 isBool "true" = True
 isBool "false" = True
 isBool _ = False
-
--- retorna o valor do booleano
-trueOrFalse :: String -> Bool
-trueOrFalse "true" = True
-trueOrFalse "false" = False

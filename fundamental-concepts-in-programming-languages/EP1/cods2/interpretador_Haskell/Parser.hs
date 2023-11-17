@@ -2,8 +2,8 @@ module Parser where
 
 import Text.Read (readMaybe)
 
-import Tokenizer (isNumeral, isSymbol, isBool, trueOrFalse)
-import Types (Token, ParseTree (..), ExprS (..), ExprC (BoolC))
+import Tokenizer (isNumeral, isSymbol, isBool)
+import Types (Token, ParseTree (..), ExprS (..))
 
 -- | O parser transforma uma lista de tokens em uma árvora sintática.
 -- Ele é responsável pela análise sintática da linguagem.
@@ -77,6 +77,7 @@ analyze tree = case tree of
       case readMaybe token of
         Just num -> NumS num
         Nothing -> error ("ERRO analyze: número inválido: " ++ token)
+    | isBool token -> BoolS token 
     | isSymbol token -> IdS token
     | otherwise -> error "ERRO analyze: token inválido"
   Pair first rest -> case first of
@@ -105,13 +106,15 @@ analyze tree = case tree of
       -- | Função auxiliar que retorna o símbolo encontrado na posição `i` da árvore.
       getSymbol :: Int -> String
       getSymbol i = case tree `index` i of
-        if verifyId Leaf symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] -> Leaf symbol
-        /*Leaf symbol -> symbol*/
+        Leaf symbol -> symbol
+      --  if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] 
+      --    then symbol
+      --    else error "ERRO analyze: símbolo esperado no lugar de uma expressão1"
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
 
 
-      verifyId :: String -> [a] -> Bool
-      verifyId id palavras = not (isNumeral (take 1 id)) && id `notElem` palavras
+      verifyId :: String -> [String] -> Bool
+      verifyId id palavras = not (isNumeral (take 1 id)) || id `notElem` palavras
   
       notElem :: Eq a => a -> [a] -> Bool
       notElem _ [] = True

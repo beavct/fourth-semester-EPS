@@ -132,6 +132,8 @@ data ExprS
     LetrecS  { nameS :: String, valS :: ExprS, bodyS :: ExprS }
   | -- | Transforma qualquer elemento da linguagem em um símbolo.
     QuoteS   { symbolS :: String }
+  | -- | Interpretação do booleano.
+    BoolS { boolS :: String }
   deriving (Show, Eq)
 
 -- | Árvore sintática com marcações de semântica, depois do processo
@@ -184,10 +186,8 @@ data ExprC
     LetrecC { funNameC :: String, argC :: ExprC, bodyC :: ExprC }
   | -- | Transforma qualquer elemento da linguagem em um símbolo.
     QuoteC  { symbolC :: String }
-
-    -- MODIFICAÇÃO
-  | 
-    BoolC   { boolC   :: Bool }
+  |  -- | Interpretação do booleano.
+    BoolC   { boolC :: String }
   deriving (Show, Eq)
 
 -- | Valores primitivos da linguagem.
@@ -203,6 +203,8 @@ data Value
     ConsV { headV :: Value, tailV :: Value }
   | -- | Representa um símbolo.
     SymV  { symbolV :: String }
+  | -- | Representa um booleano.
+    BoolV { boolV :: String }
   deriving (Show, Eq)
 
 -- | Vínculo entre um identificador (nome) e um valor.
