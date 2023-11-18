@@ -63,6 +63,7 @@ numerals = "0123456789."
 variables :: String
 variables = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_!?-+*/%<>#~"
 
+-- | Lista de símbolos que não podem estar em uma variável
 sinais :: String
 sinais = "_!?-+*/%<>#~"
 
@@ -77,6 +78,7 @@ sinais = "_!?-+*/%<>#~"
 isSinalChar :: Char -> Bool
 isSinalChar  = (`elem` sinais)
 
+-- | Verifica se o ID não tem nenhum símbolo não permitido
 isForbidden :: String -> Bool
 isForbidden = all isSinalChar
 
@@ -103,6 +105,7 @@ isNumeral = all isNumeralChar
 isVariableChar :: Char -> Bool
 isVariableChar = (`elem` variables)
 
+-- | Auxiliar o Tokenizer a juntar os IDs com letras, números e símbolos, para que possam ser avalidos no Parser
 isVariable :: String -> Bool
 isVariable = all isVariableChar
 
