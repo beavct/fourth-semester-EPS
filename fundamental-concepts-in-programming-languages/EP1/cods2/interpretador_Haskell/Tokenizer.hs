@@ -23,9 +23,10 @@ import Types (Token)
 tokenize :: String -> [Token]
 tokenize [] = []
 tokenize str@(char : chars)
-  -- ^ a sintaxe `lista@(cabeça : cauda)` nos permite desestruturar a
+  -- a sintaxe `lista@(cabeça : cauda)` nos permite desestruturar a
   -- a lista ao mesmo tempo que damos um nome a ela
   | char == '(' || char == ')' = [char] : tokenize chars
+  | isVariableChar char = accumulate isVariableChar
   | isNumeralChar char = accumulate isNumeralChar
   | isSymbolChar char = accumulate isSymbolChar
   | otherwise = tokenize chars
@@ -58,30 +59,52 @@ symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_!?-+*/
 numerals :: String
 numerals = "0123456789."
 
+-- | Lista de todos os digitos válidos para nomes de variavel.
+variables :: String
+variables = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_!?-+*/%<>#~"
+
+sinais :: String
+sinais = "_!?-+*/%<>#~"
+
 -- | Predicado para caracteres de símbolos.
 -- 
 -- Note que este código usa _currying_ na função `elem`.
 -- `elem` verifica se um valor pode ser encontrado em uma coleção.
 -- O currying é feito na coleção `symbols`, efetivamente fixando-a 
 -- e criando uma nova função que só recebe o caracter a ser buscado na coleção.
-isSymbolChar :: Char -> Bool
-isSymbolChar = (`elem` symbols)
+
+-- | Verificar se o ID possui sinais proibidos
+isSinalChar :: Char -> Bool
+isSinalChar  = (`elem` sinais)
+
+isForbidden :: String -> Bool
+isForbidden = all isSinalChar
 
 -- | Predicado para símbolos.
 -- 
+isSymbolChar :: Char -> Bool
+isSymbolChar = (`elem` symbols)
+
 -- Verifica se uma String é composta somente por caracteres válidos de símbolos.
 isSymbol :: String -> Bool
 isSymbol = all isSymbolChar
 
 -- | Predicado para caracteres de números.
+-- 
 isNumeralChar :: Char -> Bool
 isNumeralChar = (`elem` numerals)
 
--- | Predicado para caracteres de números.
--- 
 -- Verifica se uma String é composta somente por caracteres válidos de números.
 isNumeral :: String -> Bool
 isNumeral = all isNumeralChar
+
+-- | Predicado para variaveis.
+-- 
+isVariableChar :: Char -> Bool
+isVariableChar = (`elem` variables)
+
+isVariable :: String -> Bool
+isVariable = all isVariableChar
 
 -- Verifica se uma string é um booleano
 isBool    :: String -> Bool
