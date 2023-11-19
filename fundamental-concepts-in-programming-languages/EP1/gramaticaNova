@@ -1,10 +1,10 @@
-/*MODIFICAÇÕES: TIPOS*/
+/* MODIFICAÇÕES: TIPOS */
 <idChars>       ::= <letter> | <digit>
 
 /* BOOLEANO */
 <bool>          ::= "true" | "false"
 
-/*NOT RESERVED WORDS*/
+/* NOT RESERVED WORDS */
 <notCons>       ::= "c" <notAnotO> <idChars>*
                 | "c" "o" <notN> <idChars>*
                 | "c" "o" "n" <notS> <idChars>*
@@ -75,19 +75,10 @@
                 | "f" 
                 | "f" "a" 
                 | "f" "a" "l" 
-                | "f" "a" "l" "s"  
-<notQuote>      ::=  "q" <notU> <idChars>*
-                | "q" "u" <notO> <idChars>*
-                | "q" "u" "o" <notT> <idChars>*
-                | "q" "u" "o" "t" <notE> <idChars>*
-                | "q" "u" "o" "t" "e" <idChars>+
-                | "q"
-                | "q" "u" 
-                | "q" "u" "o" 
-                | "q" "u" "o" "t"
+                | "f" "a" "l" "s"   
 
-/*TUDO*/
-<notReserved>      ::= ( "a" | "b" | "d" | "e" | "g" | "j" | "k" | [m-p] | [r-s] | [u-z] ) <idChars>*
+/* TUDO */
+<notReserved>      ::= ( "a" | "b" | "d" | "e" | "g" | "j" | "k" | [m-s] | [u-z] ) <idChars>*
                 | <notCons>
                 | <notHead>
                 | <notTail>
@@ -98,34 +89,33 @@
                 | <notCall>
                 | <notTrue>
                 | <notFalse>
-                | <notQuote>
 
 
 /* NOT LETTERS*/
-<notI>          ::= [a-h] | [j-z]
-<notF>          ::= [a-e] | [g-z]
-<notC>          ::= [a-b] | [d-z]
-<notO>          ::= [a-n] | [p-z]
-<notN>          ::= [a-m] | [o-z]
-<notS>          ::= [a-r] | [t-z]
-<notH>          ::= [a-g] | [i-z]
-<notE>          ::= [a-d] | [f-z]
-<notA>          ::= [b-z]
-<notD>          ::= [a-c] | [e-z]
-<notT>          ::= [a-s] | [u-z]
-<notU>          ::= [a-t] | [v-z]
-<notL>          ::= [a-k] | [m-z]
-<notR>          ::= [a-q] | [s-z]
-<notB>          ::= "a" | [c-z]
-<notM>          ::= [a-l] | [n-z]
-<notAnotE>      ::= [b-d] | [f-z]
-<notAnotR>      ::= [b-q] | [s-z]
-<notAnotO>      ::= [b-n] | [p-z]
-
+<notI>          ::= [a-h] | [j-z] | [0-9] | [A-Z]
+<notF>          ::= [a-e] | [g-z] | [0-9] | [A-Z]
+<notC>          ::= [a-b] | [d-z] | [0-9] | [A-Z]
+<notO>          ::= [a-n] | [p-z] | [0-9] | [A-Z]
+<notN>          ::= [a-m] | [o-z] | [0-9] | [A-Z]
+<notS>          ::= [a-r] | [t-z] | [0-9] | [A-Z]
+<notH>          ::= [a-g] | [i-z] | [0-9] | [A-Z]
+<notE>          ::= [a-d] | [f-z] | [0-9] | [A-Z]
+<notA>          ::= [b-z] | [0-9] | [A-Z]
+<notD>          ::= [a-c] | [e-z] | [0-9] | [A-Z]
+<notT>          ::= [a-s] | [u-z] | [0-9] | [A-Z]
+<notU>          ::= [a-t] | [v-z] | [0-9] | [A-Z]
+<notL>          ::= [a-k] | [m-z] | [0-9] | [A-Z]
+<notR>          ::= [a-q] | [s-z] | [0-9] | [A-Z]
+<notB>          ::= "a" | [c-z] | [0-9] | [A-Z]
+<notM>          ::= [a-l] | [n-z] | [0-9] | [A-Z]
+<notAnotE>      ::= [b-d] | [f-z] | [0-9] | [A-Z] 
+<notAnotR>      ::= [b-q] | [s-z] | [0-9] | [A-Z] 
+<notAnotO>      ::= [b-n] | [p-z] | [0-9] | [A-Z]
 
 <character>     ::= <letter> | <digit> | <symbol>
 <letter>        ::= [a-z] | [A-Z] 
 <digit>         ::= [0-9]
+<maiusculas>    ::= [A-Z]
 <intnum>        ::= <digit>+
 <number>        ::= <intnum> | <intnum> "." <intnum>
 <other_symb>    ::=  "_" | "! " | "?" | "<" | ">" | "#" | "%"
@@ -135,11 +125,8 @@
                      "if" | "let" | "letrec" | 
                      "lambda" | "call" 
 <reservedW>     ::=  <reserv_symb> | <reserv_word>
-/*<id>          ::= (<character>)+*/
-/*<id>            ::=  <notCons> | <notHead> | <notTail> | <notIf> | <notLet> | <notLetrec> | <notLambda> | <notCall>*/
-/*<id>            ::= ( <notCons>* <notHead>* <notTail>* <notIf>* <notLet>* <notLetrec>* <notLambda>* <notCall>* )+*/
-/*<id>            ::= <notCons> <notHead> <notTail> <notIf> <notLet> <notLetrec> <notLambda> <notCall>*/
-<id>            ::= <notReserved>
+
+<id>            ::= <notReserved> | <maiusculas> <idChars>*
 
 
 /* -- Operadores Aritméticos -- */
@@ -172,7 +159,6 @@
 <cond>  ::= <code>  | <bool>
 
 <if>    ::= "if " <cond>  " " <pos>  " " <neg> 
-/*<cond>  ::= <code>*/
 <pos>   ::= <code>
 <neg>   ::= <code>
 
