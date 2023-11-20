@@ -62,7 +62,7 @@ int main()
 	servaddr.sin_port = htons(PORT); 
 
 	// Binding newly created socket to given IP and verification 
-	if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) { 
+	if ((bind(sockfd, (sockaddr*)&servaddr, sizeof(servaddr))) != 0) { 
 		printf("socket bind failed...\n"); 
 		exit(0); 
 	} 
@@ -79,7 +79,7 @@ int main()
 	len = sizeof(cli); 
 
 	// Accept the data packet from client and verification 
-	connfd = accept(sockfd, (SA*)&cli, &len); 
+	connfd = accept(sockfd, (sockaddr*)&cli, &len); 
 	if (connfd < 0) { 
 		printf("server accept failed...\n"); 
 		exit(0); 
