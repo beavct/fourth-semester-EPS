@@ -34,5 +34,6 @@ class Server{
         Server(vector<int> portas);
         ~Server();
         int iniServer();
+        // write arquivo de log
 
 };

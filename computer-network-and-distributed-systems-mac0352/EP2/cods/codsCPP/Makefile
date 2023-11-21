@@ -5,7 +5,7 @@ OTHERS= -lpthread
 ###################################################################################
 
 #OBJS= extraFunctions.o
-MAIN= server.cpp
+SERVER= server.cpp
 
 ###################################################################################
 
@@ -13,8 +13,10 @@ all: ep
 
 #extraFunctions.o: extraFunctions.c
 
-main.o: server.cpp
+server.o: server.cpp
+client.o: client.cpp
 
 ep: ${OBJS}
-		${PP} ${COMPFLAGS} -o ep2 ${MAIN} ${OTHERS}
+		${PP} ${COMPFLAGS} -o server ${SERVER} ${OTHERS}
+		${PP} ${COMPFLAGS} -o client client.cpp
 		@rm -rf *.o 
