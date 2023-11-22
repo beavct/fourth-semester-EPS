@@ -2,7 +2,7 @@ module Parser where
 
 import Text.Read (readMaybe)
 
-import Tokenizer (isNumeral, isSymbol, isBool, isNumeralChar, isVariable, isVariableChar, isForbidden)
+import Tokenizer (isNumeral, isSymbol, isBool, isNumeralChar, isVariable, isVariableChar, isForbidden, sinais)
 import Types (Token, ParseTree (..), ExprS (..))
 
 -- | O parser transforma uma lista de tokens em uma árvora sintática.
@@ -91,7 +91,9 @@ analyze tree = case tree of
     Leaf "cons" -> ConsS (analyzePos 1) (analyzePos 2)
     Leaf "head" -> HeadS (analyzePos 1)
     Leaf "tail" -> TailS (analyzePos 1)
-    Leaf "let"  -> LetS (getSymbol 1) (analyzePos 2) (analyzePos 3)
+    Leaf "let"  -> if getSymbol 1 == "0"
+                      then error "ERRO analyze: identificador não aceito"
+                      else LetS (getSymbol 1) (analyzePos 2) (analyzePos 3)
     Leaf "let*" -> LetStarS (getSymbol 1) (analyzePos 2)
                             (getSymbol 3) (analyzePos 4)
                             (analyzePos 5)
@@ -107,7 +109,7 @@ analyze tree = case tree of
       getSymbol :: Int -> String
       getSymbol i = case tree `index` i of
         Leaf symbol -> 
-          if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote", "true", "false"]
+          if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] || isNumeral symbol
             then error "ERRO analyze: identificador não aceito"
             else symbol
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
@@ -115,9 +117,8 @@ analyze tree = case tree of
 
 
       verifyId :: String -> [String] -> Bool
-      verifyId id palavras =  isFirstCharNumeric id || id `notElem` palavras || isForbidden id || isNumeral id
+      verifyId id palavras =  isFirstCharNumeric id || id `notElem` palavras || isForbidden id sinais || isNumeral id
 
-  
       notElem :: Eq a => a -> [a] -> Bool
       notElem _ [] = False
       notElem id (x:xs)
