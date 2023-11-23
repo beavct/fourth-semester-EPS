@@ -23,27 +23,20 @@
 -- palavras com númerps
 (let 1abc 1 (+ 1abc 2))
 (let abc123 1 (+ abc123 2))
-<<<<<<< HEAD
-=======
 (let variavel 1 (+ variavel 2))
+(letrec 21 (lambda x (if x (* x (call 21 (- x 1))) 1)) (call 21 5))
+(let 13 1 (+ 13 2))
+(call (lambda 2 (+ 2 5)) 8) 
 
-(let um 1 (+ um 5))
-(let call 1 (+ call 5))
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
-(let 8um 4 (+ 8um 5))
-(let 13 1 (+ 13 5))
-<<<<<<< HEAD
 
 -- palavras com símbolos
 (let ?um 1 (+ ?um 5))
 (call (lambda ?ma5ia (+ ?ma5ia 5)) 8) 
 (call (lambda ~ (+ ~ 5)) 8) 
+(let a@b 1 (+ a@b 5))
+(let a#b 1 (+ a#b 5))
 
 -- operadores booleanos
 (if true (+ 1 2) (+ 10 20))
 (if (if true (+ 1 2) (+ 10 20)) (+ 100 200) (+ 10 20))
 (if false (+ 1 2) (% 50 10))
-=======
-(let a@b 1 (+ a@b 5))
-(let a#b 1 (+ a#b 5))
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4

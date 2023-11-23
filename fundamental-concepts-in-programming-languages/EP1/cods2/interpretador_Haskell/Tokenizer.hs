@@ -64,7 +64,7 @@ variables :: String
 variables = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_!?-+*/%<>#~"
 
 sinais :: String
-sinais = "_!?-+*/%<>#~"
+sinais = "_!?-$+*/&%<>#~@"
 
 -- | Predicado para caracteres de símbolos.
 -- 
