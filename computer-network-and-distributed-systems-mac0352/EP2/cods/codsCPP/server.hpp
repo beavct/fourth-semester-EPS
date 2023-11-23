@@ -2,31 +2,35 @@
 #include <arpa/inet.h>
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace std;
 
-typedef struct {
-    int *socket;
-    int porta;
-    struct sockaddr_in clientAddress;
-}threadArgumentos;
+// Dados de login do usuário
+typedef struct{
+    string nomeUsuario;
+    string senha;
+}loginInfo;
 
+// Todas as informações do cliente
 typedef struct {
     int porta;
     string IP; // não sei se ṕrecisa
-    char protocolo[3];
-
-
-}infosJogador;
+    string protocolo;
+    int socket;
+    loginInfo *login;
+}infosCliente;
 
 typedef struct {
-    int jogadores;
+    int jogadores; // Quantidade de jogadores na partida
+    vector<map<int, char>> jogadorPersonagem; // Qual socket joga com qual jogador
 }infosPartidas;
 
 
 class Server{
     private:
-        vector<int> portas;
+        vector<int> portas; // Portas que o servidor está ouvindo
+        vector<infosCliente> clientes; // Informações dos clientes que estão conectados
         int partidasOcorrendo;
         vector<infosPartidas> informações;
 
@@ -34,5 +38,16 @@ class Server{
         Server(vector<int> portas);
         ~Server();
         int iniServer();
-
+        void sendHeartBeat(int clientSocket);
+        void escreveLog(vector<string> parametros);
+        string getTime();
+        void* handleUDPConnection(void *arg);
 };
+
+// Para as funções paralelizadas
+typedef struct {
+    int *socket;
+    int porta;
+    struct sockaddr_in clientAddress;
+    Server servidor;
+}threadArgumentos;

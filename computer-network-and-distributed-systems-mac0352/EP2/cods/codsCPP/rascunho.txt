@@ -1,0 +1,14 @@
+Ações do usuário:
+
+• novo <usuario> <senha>: cria um novo usuário
+• senha <senha antiga> <senha nova>: muda a senha do usuário
+• entra <usuario> <senha>: usuário loga no servidor
+• lideres: informa a tabela de pontuação de todos os usuários registrados no sistema
+• l: lista todos os usuários conectados no momento e se estão jogando ou não
+• inicia: o jogador inicia uma nova partida como Pac-Man
+• desafio <oponente>: entra na partida sendo jogada pelo outro jogador. Nesse caso, entrará como fantasma (é permitido no máximo 1 fantasma remoto por partida, além do fantasma local)
+• move <direcao>: movimenta o Pac-Man, ou o fantasma, na direção informada (as opções são a - esquerda, s - baixo, d - direita e w - cima)
+• atraso: durante uma partida com outro oponente, informa os 3 últimos valores de latência que foram medidos para esse outro oponente. Se não tiver oponente, não precisa retornar nada.
+• encerra: encerra uma partida antes da hora
+• sai: desloga
+• tchau: finaliza a execução do cliente e retorna para o shell do sistema operacional

@@ -11,7 +11,9 @@
 #include "server.hpp"
 
 #define NUM_THREADS 200
-const int BUFFER_SIZE = 4096;
+#define BUFFER_SIZE 4096
+#define HEARTBEAT_INTERVAL 5
+#define arquivoLog "log.txt"
 
 using namespace std;
 
@@ -35,7 +37,10 @@ void* handleTCPConnection(void *arg){
     }
 
     // fecha a conexão com o cliente
-    close(clientSocket);
+    if(n==0){
+        cout << "Fechando a conexão TCP" << endl;
+        close(clientSocket);
+    }
     delete(int*)arg;
 
     // Terminando a execução da thread
@@ -43,14 +48,20 @@ void* handleTCPConnection(void *arg){
 }
 
 void* handleUDPConnection(void *arg){
+    int guardou = 0;
+
     threadArgumentos *args = new threadArgumentos;
     args = (threadArgumentos*)arg;
     int udpSocket = *(int*)args->socket;
-    struct sockaddr_in clientAddress = (struct sockaddr_in)args->clientAddress;
+    //struct sockaddr_in clientAddress = (struct sockaddr_in)args->clientAddress;
+    //socklen_t clientAddressLength = sizeof(clientAddress);
+
+    struct sockaddr_in clientaddr;
+    socklen_t clientaddrLen = sizeof(clientaddr);
+
     //int porta = *(int*)args->porta;
 
     char recvline[BUFFER_SIZE];
-    socklen_t clientAddressLength = sizeof(clientAddress);
 
     //cout << "socket UDP: " << udpSocket << endl;
 
@@ -59,7 +70,16 @@ void* handleUDPConnection(void *arg){
     // informar para onde ela vai e gravar de onde ela veio
     ssize_t n;
     while (1) {
-        n = recvfrom(udpSocket, recvline, BUFFER_SIZE, 0, (struct sockaddr*)&clientAddress, &clientAddressLength);
+        n = recvfrom(udpSocket, recvline, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &clientaddrLen);
+
+        if(!guardou){
+            guardou = 1;
+            // Escreve no arquivo log que o cliente se conectou <IP>
+            this->escreveLog(vector<string>{"Conexão realizada por um cliente", string(inet_ntoa(clientaddr.sin_addr))});
+        }
+
+        cout << "Endereço IP da conexão UDP: " << string(inet_ntoa(clientaddr.sin_addr)) << endl;
+
         if(n == -1){
             pthread_exit(nullptr);
             return nullptr;
@@ -73,13 +93,57 @@ void* handleUDPConnection(void *arg){
             perror("fputs error");
             exit (1);
         }
-        sendto(udpSocket, recvline, n, 0, (struct sockaddr*)&clientAddress, clientAddressLength);
+        sendto(udpSocket, recvline, n, 0, (struct sockaddr*)&clientaddr, clientaddrLen);
     }
 
     delete (int*)arg; 
 
     // Termina a execução da thread
     pthread_exit(nullptr);
+}
+
+void Server::escreveLog(vector<string> parametros){
+    // Abre o arquivo log.txt em modo de apensamento (append)
+    ofstream logFile(arquivoLog, ios::app);
+
+    if (!logFile.is_open()) {
+        // Se não conseguir abrir o arquivo, exibe uma mensagem de erro
+        cerr << "Erro ao abrir o arquivo de log. :(" << endl;
+        return;
+    }
+
+    // Escreve o momento da ação
+    logFile << this->getTime() << " ";
+
+    // Escreve os parâmetros no arquivo, separados por espaço
+    for (const auto& parametro : parametros) {
+        logFile << parametro << " ";
+    }
+
+    // Adiciona uma nova linha ao final
+    logFile << endl;
+
+    // Fecha o arquivo
+    logFile.close();
+
+}
+
+string Server::getTime(){
+    time_t currentTime = std::time(0);
+
+    tm *localTime = localtime(&currentTime); 
+
+    // Constrói a string de data e hora
+    stringstream datetime;
+    datetime << localTime->tm_year + 1900 << '-'
+             << localTime->tm_mon + 1 << '-'
+             << localTime->tm_mday << ' '
+             << localTime->tm_hour << ':'
+             << localTime->tm_min << ':'
+             << localTime->tm_sec;
+
+    // Obtém a string resultante
+    return datetime.str();
 }
 
 Server::Server(vector<int> portas){
@@ -94,17 +158,13 @@ Server::~Server(){
     
 }
 
-int Server::iniServer(){
+void Server::sendHeartBeat(int clientSocket){
 
+}
+
+int Server::iniServer(){
     vector<int> tcpSockets(this->portas.size()), udpSockets(this->portas.size());
     vector<struct sockaddr_in> servaddr(this->portas.size());
-    //pthread_t threadsPorts[NUM_THREADS];
-    //long tPorts = 0;
-
-    //struct sockaddr_in servaddr;   
-    //bzero(&servaddr, sizeof(servaddr));
-    //servaddr.sin_family = AF_INET;
-    //servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Criação dos sockets UDP e TCP
     for(int i = 0; i< (int)this->portas.size(); i++){
@@ -159,6 +219,17 @@ int Server::iniServer(){
         // UDP não tem que ficar escutando
     }
 
+    // se pá tem que arrumar isso daqui
+    //vector<struct sockaddr_in> clientaddr(this->portas.size());
+    struct sockaddr_in clientaddr;
+    socklen_t clientaddrLen;
+    
+    //cout<< string(inet_ntoa(servaddr[1].sin_addr)) << endl;
+    //cout<< string(inet_ntoa(servaddr[0].sin_addr)) << endl;
+
+    this->escreveLog(vector<string>{"Servidor iniciado"});
+
+
     cout << "[Servidor no ar. Aguardando conexões nas portas";
     for(int i=0; i<(int)this->portas.size(); i++){
         cout << " " << this->portas[i] ;
@@ -170,7 +241,8 @@ int Server::iniServer(){
     long t1 = 0; // contagem de threads TCP
     long t2 = 0; // contagem de threads UDP
 
-    for(;;){
+    // O servidor roda enquanto ctrl-C não é pressionado
+    while(cin){
         for(int i=0; i<(int)this->portas.size(); i++){
 
             // thread.detach() -> executa a thread em segundo plano e continua a execução do resto do código
@@ -179,9 +251,21 @@ int Server::iniServer(){
             thread([&](){
                 int *TCPclientSocket  = new int;
 
-                *TCPclientSocket = accept(tcpSockets[i], nullptr, nullptr);
+                *TCPclientSocket = accept(tcpSockets[i], (struct sockaddr*)&clientaddr, &clientaddrLen);
+                
+                // Escreve no arquivo log que o cliente se conectou <IP>
+                this->escreveLog(vector<string>{"Conexão realizada por um cliente", string(inet_ntoa(clientaddr.sin_addr))});
 
-                // UDP não tem que aceitar conexão
+                // Guarda as informações do cliente
+                infosCliente aux;
+                aux.IP = string(inet_ntoa(clientaddr.sin_addr));
+                aux.porta = clientaddr.sin_port;
+                aux.protocolo = "TCP";
+                aux.login = nullptr;
+                this->clientes.push_back(aux);
+
+                //cout << "Endereço IP da conexão TCP: " << string(inet_ntoa(clientaddr.sin_addr)) << endl;
+                
 
                 // Argumentos para a thread do TCP
                 threadArgumentos *argsTCP = new threadArgumentos;
@@ -207,14 +291,16 @@ int Server::iniServer(){
                 int *UDPclientSocket = new int;
                 *UDPclientSocket = udpSockets[i];
 
+                // UDP não tem que aceitar conexão
+
                 // Argumentos para a thread do UDP
                 threadArgumentos *argsUDP = new threadArgumentos;
                 //argsUDP->porta = this->portas[i];
                 argsUDP->socket = UDPclientSocket;
-                argsUDP->clientAddress = servaddr[i];
+                //argsUDP->clientAddress = servaddr[i];
 
                 // Thread para conexão UDP
-                if(pthread_create(&udpThreads[t2], nullptr, handleUDPConnection, argsUDP) != -1){
+                if(pthread_create(&udpThreads[t2], nullptr, static_cast(this->handleUDPConnection), argsUDP) != -1){
                     t2++;
                 }
                 else{
@@ -229,6 +315,7 @@ int Server::iniServer(){
         
     }
 
+    this->escreveLog(vector<string>{"Servidor finalizado"});
 
     for (int i = 0; i < t1; i++) {
         pthread_join(udpThreads[i], NULL);

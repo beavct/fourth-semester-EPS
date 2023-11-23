@@ -1,0 +1,2 @@
+2023-11-23 8:44:26 Servidor iniciado 
+2023-11-23 8:44:30 Conexão realizada por um cliente 0.0.0.0 
