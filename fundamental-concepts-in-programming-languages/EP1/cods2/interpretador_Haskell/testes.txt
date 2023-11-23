@@ -13,16 +13,25 @@
 -- NOVOS TESTES
 -- palavras reservadas
 (let call 1 (+ call 2))
+(let let 1 (+ call 2))
+(let letrec 1 (+ call 2))
+(let quote 1 (+ call 2))
+(let lambda 1 (+ call 2))
+(let false 1 (+ false 5))
 (let 23call 1 (+ 23call 2))
+
+-- palavras com númerps
 (let 1abc 1 (+ 1abc 2))
 (let abc123 1 (+ abc123 2))
-(let variavel 1 (+ variavel 2))
-
-(let um 1 (+ um 5))
-(let false 1 (+ false 5))
-(let false 1 (+ false 0))
-(let call 1 (+ call 5))
 (let 8um 4 (+ 8um 5))
-(let 1um 1 (+ 1um 5))
 (let 13 1 (+ 13 5))
-(let 13 (+ 12 13) (+ 13 5)) 
+
+-- palavras com símbolos
+(let ?um 1 (+ ?um 5))
+(call (lambda ?ma5ia (+ ?ma5ia 5)) 8) 
+(call (lambda ~ (+ ~ 5)) 8) 
+
+-- operadores booleanos
+(if true (+ 1 2) (+ 10 20))
+(if (if true (+ 1 2) (+ 10 20)) (+ 100 200) (+ 10 20))
+(if false (+ 1 2) (% 50 10))
