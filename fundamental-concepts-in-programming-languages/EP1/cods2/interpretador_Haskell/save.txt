@@ -1,0 +1,8 @@
+
+
+
+        Leaf symbol -> 
+          if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] || isNumeral symbol
+            then error "ERRO analyze: identificador não aceito"
+            else symbol
+        _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"

@@ -85,19 +85,25 @@ analyze tree = case tree of
     Leaf "*" -> MultS (analyzePos 1) (analyzePos 2)
     Leaf "-" -> BMinusS (analyzePos 1) (analyzePos 2)
     Leaf "~" -> UMinusS (analyzePos 1)
-    Leaf "lambda" -> LamS (getSymbol 1) (analyzePos 2)
+    Leaf "lambda" -> if isNumeral (getSymbol 1)
+                      then error "ERRO analyze: identificador não aceito"
+                      else LamS (getSymbol 1) (analyzePos 2)
     Leaf "call" -> AppS (analyzePos 1) (analyzePos 2)
     Leaf "if"   -> IfS (analyzePos 1) (analyzePos 2) (analyzePos 3)
     Leaf "cons" -> ConsS (analyzePos 1) (analyzePos 2)
     Leaf "head" -> HeadS (analyzePos 1)
     Leaf "tail" -> TailS (analyzePos 1)
-    Leaf "let"  -> if getSymbol 1 == "0"
+    Leaf "let"  -> if isNumeral (getSymbol 1)
+                    then error "ERRO analyze: identificador não aceito"
+                    else LetS (getSymbol 1) (analyzePos 2) (analyzePos 3)
+    Leaf "let*" -> if isNumeral (getSymbol 1) 
+                    then error "ERRO analyze: identificador não aceito"
+                    else LetStarS (getSymbol 1) (analyzePos 2)
+                                  (getSymbol 3) (analyzePos 4)
+                                  (analyzePos 5)
+    Leaf "letrec" -> if isNumeral (getSymbol 1)
                       then error "ERRO analyze: identificador não aceito"
-                      else LetS (getSymbol 1) (analyzePos 2) (analyzePos 3)
-    Leaf "let*" -> LetStarS (getSymbol 1) (analyzePos 2)
-                            (getSymbol 3) (analyzePos 4)
-                            (analyzePos 5)
-    Leaf "letrec" -> LetrecS (getSymbol 1) (analyzePos 2) (analyzePos 3)
+                      else LetrecS (getSymbol 1) (analyzePos 2) (analyzePos 3)
     Leaf "quote"  -> QuoteS (show (tree `index` 1))
 
     _ -> error ("ERRO analyze: elemento da parse tree inesperado (" ++ show first ++ ")")
@@ -109,12 +115,16 @@ analyze tree = case tree of
       getSymbol :: Int -> String
       getSymbol i = case tree `index` i of
         Leaf symbol -> 
-          if verifyId symbol ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"] || isNumeral symbol
-            then error "ERRO analyze: identificador não aceito"
+          if isNumeral symbol 
+            then error "Identificador não aceito, pois é um número"
+          else if isForbidden symbol sinais
+            then error "ERRO analyze: identificador não aceito, pois contém símbolo não permitido"
+          else if isFirstCharNumeric symbol 
+            then error "Identificador não aceito, pois o primeiro caracter é um número"
+          else if symbol `notElem` ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"]
+            then error "ERRO analyze: identificador não aceito, pois é uma palavra reservada"
             else symbol
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
-
-
 
       verifyId :: String -> [String] -> Bool
       verifyId id palavras =  isFirstCharNumeric id || id `notElem` palavras || isForbidden id sinais || isNumeral id
