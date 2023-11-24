@@ -10,5 +10,5 @@ class Partida{
     public:
         Partida();
         ~Partida();
-        void iniPartida();
+        void iniPartidaLocal();
 };

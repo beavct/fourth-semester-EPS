@@ -8,6 +8,7 @@ class Personagem {
         int xProx;
         int yProx;
         int score;
+        int colidiuFantasma;
     public:
         Personagem();
         ~Personagem();
@@ -18,10 +19,11 @@ class Personagem {
         int getXProx();
         int getYProx();
         int getScore();
+        int getColidiuFantasma();
         void setScore(int x);
         int verifyCycle(Labirinto Lab);
         void fixPosition(int error, Labirinto Lab, int x, int y);
-        void movimentoRemoto(Labirinto Lab, Personagem P, int r);
-        void movimentoLocal();
+        int verifyPositionPacman(Labirinto Labirinto);
+        void movimentoLocal(Labirinto Labirinto);
         void movimentoRede();
 };

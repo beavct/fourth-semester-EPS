@@ -4,14 +4,17 @@
 using namespace std;
 
 Labirinto::Labirinto(){
-    linhas = 5;
-    colunas = 27;
+    this->linhas = 5;
+    this->colunas = 29;
 
-    memcpy(lab[0], "*****.*..**....  .   *..*****", 30); 
-    memcpy(lab[1], "*****.*..*.*****.*..*.*****.*", 30);
-    memcpy(lab[2], "*****.*..*.. ..  ..*..*****.*", 30);
-    memcpy(lab[3], "...   .................F....", 30);
-    memcpy(lab[4], "*****.*..*. ..  ..*.*****.*", 30);
+    memcpy(lab[0], "******.**... .....**.******", 29); 
+    memcpy(lab[1], "******.**.*******.**.******", 29);
+    memcpy(lab[2], "******.**.*.. ..*.**.******", 29);
+    memcpy(lab[3], "..... ....*.....*.......F..", 29);
+    memcpy(lab[4], "******.**.*.. ..*.**.******", 29);
+
+    // F: Fantasma local
+    // Centro: [2][13]
 }
 
 
@@ -20,7 +23,7 @@ Labirinto::~Labirinto(){
 }
 
 void Labirinto::printLabirinto(){
-       int i, j;
+    int i, j;
 
     for (i = 0; i < this->linhas; i++) {
         for (j = 0; j < this->colunas; j++) {
@@ -30,5 +33,14 @@ void Labirinto::printLabirinto(){
     }
 }
 
+int Labirinto::updateLabirinto(char personagem, int x, int y){
+    char save = this->lab[x][y];
 
+    this->lab[x][y] = personagem;
+
+    if(save == '.')
+        return 1; // Comeu pac-dot
+    
+    return 0; // Não comeu pac-dot
+}
 

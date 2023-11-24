@@ -5,9 +5,10 @@ class Labirinto {
         int linhas;
         int colunas;
         int pacdots;
-        char lab[5][30];
     public:
+        char lab[5][29];
         Labirinto();
         ~Labirinto();
         void printLabirinto();
+        int updateLabirinto(char personagem, int x, int y);  
 };

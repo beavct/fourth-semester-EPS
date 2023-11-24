@@ -4,33 +4,34 @@ OTHERS= -lpthread
 
 ###################################################################################
 
-#OBJS= extraFunctions.o
+JOGO = partida.o labirinto.o personagem.o fantasma.o
+OBJS = server.o client.o eestados.o
+
+###################################################################################
+
 SERVER= server.cpp
-<<<<<<< HEAD
 CLIENT= client.cpp
 MAQ = estados.cpp
-=======
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
+PACMAN = partida.cpp
 
 ###################################################################################
 
 all: ep
 
-#extraFunctions.o: extraFunctions.c
+partida.o: partida.h
+labirinto.o: labirinto.h 
+personagem.o: personagem.h 
+fantasma.o: fantasma.h
 
 server.o: server.cpp
 client.o: client.cpp
-<<<<<<< HEAD
 estados.o: estados.cpp
 
 ep: ${OBJS}
-		${PP} ${COMPFLAGS} -o server ${SERVER} ${OTHERS}
-		${PP} ${COMPFLAGS} -o client ${CLIENT} ${OTHERS}
-		${PP} ${COMPFLAGS} -o estados ${MAQ}
-=======
+	${PP} ${COMPFLAGS} -o server ${SERVER} ${OTHERS}
+	${PP} ${COMPFLAGS} -o client ${CLIENT} ${OTHERS}
+	${PP} ${COMPFLAGS} -o estados ${MAQ}
+	@rm -rf *.o 
 
-ep: ${OBJS}
-		${PP} ${COMPFLAGS} -o server ${SERVER} ${OTHERS}
-		${PP} ${COMPFLAGS} -o client client.cpp
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
-		@rm -rf *.o 
+jogo: ${JOGO}
+	${PP} ${COMPFLAGS} -o jogo ${PACMAN}
