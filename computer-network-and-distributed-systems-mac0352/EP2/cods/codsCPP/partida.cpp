@@ -51,10 +51,12 @@ void Partida::iniPartidaLocal(){
     }
 
     if(!Continue){
+        system("clear");
         Labirinto.printLabirinto();
         cout << "Game over! Pontos = " << PacmanLocal.getScore() << endl;
     }
     else{ //Continue == 2
+        system("clear");
         Labirinto.printLabirinto();
         cout << "Congratulations! Pontos = " << PacmanLocal.getScore() << endl;
     } 
