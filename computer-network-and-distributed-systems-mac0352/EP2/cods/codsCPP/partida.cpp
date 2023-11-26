@@ -32,6 +32,7 @@ void Partida::iniPartidaLocal(){
         if(Fantasma.getCollidedPacman())
             Continue = 0; //perdeu a partida
 
+        system("clear");
         cout << endl << endl;
         Labirinto.printLabirinto();
         cout << endl;
@@ -44,6 +45,9 @@ void Partida::iniPartidaLocal(){
             if(PacmanLocal.getColidiuFantasma())
                 Continue = 0;
         }   
+
+        system("clear");
+        Labirinto.printLabirinto();
     }
 
     if(!Continue){
