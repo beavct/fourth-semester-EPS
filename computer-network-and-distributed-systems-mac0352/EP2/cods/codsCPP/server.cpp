@@ -17,6 +17,50 @@
 
 using namespace std;
 
+string getTime(){
+    time_t currentTime = std::time(0);
+
+    tm *localTime = localtime(&currentTime); 
+
+    // Constrói a string de data e hora
+    stringstream datetime;
+    datetime << localTime->tm_year + 1900 << '-'
+             << localTime->tm_mon + 1 << '-'
+             << localTime->tm_mday << ' '
+             << localTime->tm_hour << ':'
+             << localTime->tm_min << ':'
+             << localTime->tm_sec;
+
+    // Obtém a string resultante
+    return datetime.str();
+}
+
+void escreveLog(vector<string> parametros){
+    // Abre o arquivo log.txt em modo de apensamento (append)
+    ofstream logFile(arquivoLog, ios::app);
+
+    if (!logFile.is_open()) {
+        // Se não conseguir abrir o arquivo, exibe uma mensagem de erro
+        cerr << "Erro ao abrir o arquivo de log. :(" << endl;
+        return;
+    }
+
+    // Escreve o momento da ação
+    logFile << getTime() << " ";
+
+    // Escreve os parâmetros no arquivo, separados por espaço
+    for (const auto& parametro : parametros) {
+        logFile << parametro << " ";
+    }
+
+    // Adiciona uma nova linha ao final
+    logFile << endl;
+
+    // Fecha o arquivo
+    logFile.close();
+
+}
+
 void* handleTCPConnection(void *arg){
     threadArgumentos *args = new threadArgumentos;
     args = (threadArgumentos*)arg;
@@ -48,7 +92,6 @@ void* handleTCPConnection(void *arg){
 }
 
 void* handleUDPConnection(void *arg){
-    int guardou = 0;
 
     threadArgumentos *args = new threadArgumentos;
     args = (threadArgumentos*)arg;
@@ -72,11 +115,8 @@ void* handleUDPConnection(void *arg){
     while (1) {
         n = recvfrom(udpSocket, recvline, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &clientaddrLen);
 
-        if(!guardou){
-            guardou = 1;
-            // Escreve no arquivo log que o cliente se conectou <IP>
-            this->escreveLog(vector<string>{"Conexão realizada por um cliente", string(inet_ntoa(clientaddr.sin_addr))});
-        }
+        // não estou escrevendo o endereço IP no arquivo log
+        escreveLog(vector<string>{"Conexão realizada por um cliente", string(inet_ntoa(clientaddr.sin_addr))});
 
         cout << "Endereço IP da conexão UDP: " << string(inet_ntoa(clientaddr.sin_addr)) << endl;
 
@@ -102,48 +142,12 @@ void* handleUDPConnection(void *arg){
     pthread_exit(nullptr);
 }
 
-void Server::escreveLog(vector<string> parametros){
-    // Abre o arquivo log.txt em modo de apensamento (append)
-    ofstream logFile(arquivoLog, ios::app);
+int Server::handleCommands(int sockfd){
+    // Cada operação equivale à um int de 1 à 12, e ocupa 1 byte na mensagem 
+    // mensagem: <Operação> [1 byte] <Tamanho do próximo campo> [4 bytes] <Campo> [Tamanho informado]
+    // A mensagem pode ter mais de um campo dependendo da operação
 
-    if (!logFile.is_open()) {
-        // Se não conseguir abrir o arquivo, exibe uma mensagem de erro
-        cerr << "Erro ao abrir o arquivo de log. :(" << endl;
-        return;
-    }
-
-    // Escreve o momento da ação
-    logFile << this->getTime() << " ";
-
-    // Escreve os parâmetros no arquivo, separados por espaço
-    for (const auto& parametro : parametros) {
-        logFile << parametro << " ";
-    }
-
-    // Adiciona uma nova linha ao final
-    logFile << endl;
-
-    // Fecha o arquivo
-    logFile.close();
-
-}
-
-string Server::getTime(){
-    time_t currentTime = std::time(0);
-
-    tm *localTime = localtime(&currentTime); 
-
-    // Constrói a string de data e hora
-    stringstream datetime;
-    datetime << localTime->tm_year + 1900 << '-'
-             << localTime->tm_mon + 1 << '-'
-             << localTime->tm_mday << ' '
-             << localTime->tm_hour << ':'
-             << localTime->tm_min << ':'
-             << localTime->tm_sec;
-
-    // Obtém a string resultante
-    return datetime.str();
+    
 }
 
 Server::Server(vector<int> portas){
@@ -227,7 +231,7 @@ int Server::iniServer(){
     //cout<< string(inet_ntoa(servaddr[1].sin_addr)) << endl;
     //cout<< string(inet_ntoa(servaddr[0].sin_addr)) << endl;
 
-    this->escreveLog(vector<string>{"Servidor iniciado"});
+    escreveLog(vector<string>{"Servidor iniciado"});
 
 
     cout << "[Servidor no ar. Aguardando conexões nas portas";
@@ -254,7 +258,7 @@ int Server::iniServer(){
                 *TCPclientSocket = accept(tcpSockets[i], (struct sockaddr*)&clientaddr, &clientaddrLen);
                 
                 // Escreve no arquivo log que o cliente se conectou <IP>
-                this->escreveLog(vector<string>{"Conexão realizada por um cliente", string(inet_ntoa(clientaddr.sin_addr))});
+                escreveLog(vector<string>{"Conexão realizada por um cliente", string(inet_ntoa(clientaddr.sin_addr))});
 
                 // Guarda as informações do cliente
                 infosCliente aux;
@@ -300,7 +304,7 @@ int Server::iniServer(){
                 //argsUDP->clientAddress = servaddr[i];
 
                 // Thread para conexão UDP
-                if(pthread_create(&udpThreads[t2], nullptr, static_cast(this->handleUDPConnection), argsUDP) != -1){
+                if(pthread_create(&udpThreads[t2], nullptr, handleUDPConnection, argsUDP) != -1){
                     t2++;
                 }
                 else{
@@ -315,7 +319,7 @@ int Server::iniServer(){
         
     }
 
-    this->escreveLog(vector<string>{"Servidor finalizado"});
+    escreveLog(vector<string>{"Servidor finalizado"});
 
     for (int i = 0; i < t1; i++) {
         pthread_join(udpThreads[i], NULL);

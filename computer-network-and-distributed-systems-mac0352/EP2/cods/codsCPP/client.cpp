@@ -11,11 +11,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <netdb.h>
-<<<<<<< HEAD
 #include <curl/curl.h> // pegar o próprio IP
 #include <pthread.h>
-=======
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
 #include "client.hpp"
 
 #define BUFFER_SIZE 4096
@@ -26,22 +23,17 @@ Client::Client(char *tipoConexao, int portaServer, char *IP){
     this->conexaoServer = tipoConexao;
     this->portaServer = portaServer;
     this->serverIP = IP;
-<<<<<<< HEAD
     //this->selfIP = this->getOwnIP();
     this->selfIP = "127.0.0.1";
     this->selfPorta = this->randPorta();
 
     //cout << "selfPorta: " << this->selfPorta << endl;
-=======
-    //this->selfIP = IP;
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
 }
 
 Client::~Client(){
     
 }
 
-<<<<<<< HEAD
 int Client::randPorta(){
     int MENOR = 1025;
     int MAIOR = 65535;
@@ -151,22 +143,11 @@ void Client::connect2Peer(string &peerIP, int peerPorta){
     thread([&]() {
         this->handle2Player(peerSocket, peerIP, peerPorta);
     }).detach();
-=======
-void Client::connect2Server(){
-
-}
-
-void Client::connect2Player(){
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
 
 }
 
 // não está funcionando
-<<<<<<< HEAD
 void Client::TCPconnectionServer(int porta){
-=======
-void Client::TCPconnection(int porta){
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
 	int sockfd;
 	struct sockaddr_in servaddr;
 
@@ -226,11 +207,7 @@ void Client::TCPconnection(int porta){
 }
 
 // Copiei descaradamente do código do Daniel
-<<<<<<< HEAD
 void Client::UDPconnectionServer(int porta){
-=======
-void Client::UDPconnection(int porta){
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
     int	sockfd;
     struct  sockaddr_in servaddr;
     struct  sockaddr_in dadosLocal;
@@ -253,10 +230,6 @@ void Client::UDPconnection(int porta){
     }
 
     printf("[Conectando no servidor no IP %s]\n",enderecoIPServidor);
-<<<<<<< HEAD
-=======
-    printf("[o comando 'exit' encerra a conexão]\n");
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
 
     /* UDP: Sockets UDP tem que ser especificados com SOCK_DGRAM */
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -298,17 +271,9 @@ void Client::UDPconnection(int porta){
         /* UDP: Agora cada datagrama é independente pois não há
          * conexão, então a cada envio de mensagem é necessário
          * informar para onde ela vai */
-<<<<<<< HEAD
         sendto(sockfd,recvline,strlen(recvline),0,(struct sockaddr *)&servaddr,(socklen_t)servaddrLen);
         /* UDP: O recebimento de mensagem também tem que ser feito
          * independente, pois não há mais conexão */
-=======
-        /* write(sockfd, recvline, strlen(recvline)); */
-        sendto(sockfd,recvline,strlen(recvline),0,(struct sockaddr *)&servaddr,(socklen_t)servaddrLen);
-        /* UDP: O recebimento de mensagem também tem que ser feito
-         * independente, pois não há mais conexão */
-        /* n=read(sockfd,recvline,MAXLINE); */
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
         n=recvfrom(sockfd,recvline,BUFFER_SIZE,0,(struct sockaddr *)&servaddr,(socklen_t *)&servaddrLen);
         recvline[n]=0;
         if ((fputs(recvline,stdout)) == EOF) {
@@ -334,7 +299,6 @@ int main(int argc, char **argv){
     Client cliente(argv[3], atoi(argv[2]), argv[1]);
 
     if(strcmp(argv[3], "UDP") == 0)
-<<<<<<< HEAD
         cliente.UDPconnectionServer(atoi(argv[2]));
     else if(strcmp(argv[3], "TCP") == 0)
         cliente.TCPconnectionServer(atoi(argv[2]));
@@ -352,14 +316,6 @@ int main(int argc, char **argv){
     //cin >> porta;
 //
     //cliente.connect2Peer(endereçoPadrao, porta);
-=======
-        cliente.UDPconnection(atoi(argv[2]));
-    else if(strcmp(argv[3], "TCP") == 0)
-        cliente.TCPconnection(atoi(argv[2]));
-    else    
-        cerr << "O servidor não suporta conexões " << argv[3] << endl;
-
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
 
     return 0;
 }

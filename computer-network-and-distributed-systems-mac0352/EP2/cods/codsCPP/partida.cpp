@@ -7,7 +7,6 @@
 using namespace std;
 
 Partida::Partida(){
-
 }
 
 Partida::~Partida(){
@@ -19,9 +18,10 @@ void Partida::iniPartidaLocal(){
     Fantasma Fantasma;
     Personagem PacmanLocal; 
     Partida Partida;
-    int Continue = 1, totalPacdots = 53, r = 0;
+    int Continue = 1, totalPacdots = 54, r = 0;
 
     PacmanLocal.setPositionAtu(2, 13);
+    PacmanLocal.setCaractere('C');
 
     while(totalPacdots - PacmanLocal.getScore() != 0 && Continue == 1) {
 
@@ -38,6 +38,7 @@ void Partida::iniPartidaLocal(){
 
         //move o pacman
         if(Continue){
+            cout << "Pac-Man> ";
             PacmanLocal.movimentoLocal(Labirinto);
 
             if(PacmanLocal.getColidiuFantasma())
@@ -54,10 +55,3 @@ void Partida::iniPartidaLocal(){
         cout << "Congratulations! Pontos = " << PacmanLocal.getScore() << endl;
     } 
 }
-
-int main(){
-    Partida Partida;
-
-    Partida.iniPartidaLocal();
-}
-

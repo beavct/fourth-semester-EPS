@@ -6,7 +6,6 @@
 class Partida{
     protected:
         int players;
-        int *score;
     public:
         Partida();
         ~Partida();

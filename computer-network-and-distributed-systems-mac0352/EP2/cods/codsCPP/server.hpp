@@ -6,6 +6,13 @@
 
 using namespace std;
 
+// Para as funções paralelizadas
+typedef struct {
+    int *socket;
+    int porta;
+    struct sockaddr_in clientAddress;
+}threadArgumentos;
+
 // Dados de login do usuário
 typedef struct{
     string nomeUsuario;
@@ -38,20 +45,6 @@ class Server{
         Server(vector<int> portas);
         ~Server();
         int iniServer();
-<<<<<<< HEAD
         void sendHeartBeat(int clientSocket);
-        void escreveLog(vector<string> parametros);
-        string getTime();
-        void* handleUDPConnection(void *arg);
+        int handleCommands(int sockfd);
 };
-=======
-        // write arquivo de log
->>>>>>> 48c989c651ad8e7af41ea3bd589485918557ede4
-
-// Para as funções paralelizadas
-typedef struct {
-    int *socket;
-    int porta;
-    struct sockaddr_in clientAddress;
-    Server servidor;
-}threadArgumentos;

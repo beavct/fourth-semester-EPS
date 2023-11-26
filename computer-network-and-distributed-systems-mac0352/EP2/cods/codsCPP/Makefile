@@ -1,27 +1,28 @@
 PP=g++
-COMPFLAGS= -Wall -pedantic -O2
+COMPFLAGS= -Wall -pedantic -O2 -g
 OTHERS= -lpthread
 
 ###################################################################################
 
-JOGO = partida.o labirinto.o personagem.o fantasma.o
-OBJS = server.o client.o eestados.o
+JOGO = jogo.o partida.o labirinto.o personagem.o fantasma.o 
+OBJS = server.o client.o estados.o
 
 ###################################################################################
 
 SERVER= server.cpp
 CLIENT= client.cpp
 MAQ = estados.cpp
-PACMAN = partida.cpp
+PACMAN = jogo.cpp partida.cpp labirinto.cpp personagem.cpp fantasma.cpp
 
 ###################################################################################
 
 all: ep
 
-partida.o: partida.h
-labirinto.o: labirinto.h 
-personagem.o: personagem.h 
-fantasma.o: fantasma.h
+partida.o: partida.cpp
+labirinto.o: labirinto.cpp 
+personagem.o: personagem.cpp
+fantasma.o: fantasma.cpp
+jogo.o: jogo.cpp
 
 server.o: server.cpp
 client.o: client.cpp
@@ -35,3 +36,4 @@ ep: ${OBJS}
 
 jogo: ${JOGO}
 	${PP} ${COMPFLAGS} -o jogo ${PACMAN}
+	@rm -rf *.o

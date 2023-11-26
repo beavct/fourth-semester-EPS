@@ -2,13 +2,14 @@
 
 class Labirinto {
     private:
+        char **lab;
         int linhas;
         int colunas;
         int pacdots;
     public:
-        char lab[5][29];
         Labirinto();
         ~Labirinto();
         void printLabirinto();
-        int updateLabirinto(char personagem, int x, int y);  
+        int updateLabirinto(Labirinto Labirinto, char personagem, int x, int y);  
+        char getElemento(int x, int y);
 };

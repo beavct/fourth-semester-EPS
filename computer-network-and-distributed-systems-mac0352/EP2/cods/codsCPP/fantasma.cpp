@@ -7,6 +7,9 @@ using namespace std;
 
 Fantasma::Fantasma(){
     this->collidedPacman = 0;
+    this->onPacdot = 1;
+    this->setPositionAtu(3, 24);
+    this->setPositionProx(3, 24);
 }
 
 Fantasma::~Fantasma(){
@@ -52,15 +55,15 @@ void Fantasma::moveFantasma(Labirinto Labirinto, int r){
 
     else if (this->verifyPosition(Labirinto, mov) == 2) {
         this->collidedPacman = 1;
-        Labirinto.updateLabirinto('X', this->getXProx(), this->getYProx()); 
+        Labirinto.updateLabirinto(Labirinto, 'X', this->getXProx(), this->getYProx()); 
     }
 
 }
 
 int Fantasma::verifyPosition(Labirinto Labirinto, int mov){
-    if(Labirinto.lab[this->getXProx()][this->getYProx()] == '*' || Labirinto.lab[this->getXProx()][this->getYProx()] == 'F' || mov == 0)
+    if(Labirinto.getElemento(this->getXProx(), this->getYProx()) == '*' || Labirinto.getElemento(this->getXProx(), this->getYProx()) == 'F' || mov == 0)
         return 0;
-    else if(Labirinto.lab[this->getXProx()][this->getYProx()] == 'C') //colidiu com o Pacman
+    else if(Labirinto.getElemento(this->getXProx(), this->getYProx()) == 'C') //colidiu com o Pacman
         return 2;
     else 
         return 1;
@@ -69,18 +72,19 @@ int Fantasma::verifyPosition(Labirinto Labirinto, int mov){
 void Fantasma::putFantasma(Labirinto Labirinto){
     int flag = 0;
 
+    //cout << "fantasma: " << this->getXAtu() << " " << this->getYAtu() << endl;
 
-    if (Labirinto.lab[this->getXProx()][this->getYProx()] == '.')
+    if (Labirinto.getElemento(this->getXProx(), this->getYProx()) == '.')
         flag = 1;
 
-    Labirinto.updateLabirinto('F', this->getXProx(), this->getYProx());
+    Labirinto.updateLabirinto(Labirinto, 'F', this->getXProx(), this->getYProx());
 
     if (this->getOnPacdot() == 1) {
-        Labirinto.updateLabirinto('.', this->getXAtu(), this->getYAtu());
+        Labirinto.updateLabirinto(Labirinto, '.', this->getXAtu(), this->getYAtu());
         this->onPacdot = 0;
     }
     else
-        Labirinto.updateLabirinto(' ', this->getXAtu(), this->getYAtu());
+        Labirinto.updateLabirinto(Labirinto, ' ', this->getXAtu(), this->getYAtu());
 
     if (flag == 1)
         this->onPacdot = 1;

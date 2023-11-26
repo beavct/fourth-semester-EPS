@@ -3,6 +3,7 @@
 
 class Personagem {
     protected:
+        char caractere;
         int xAtu;
         int yAtu;
         int xProx;
@@ -12,6 +13,7 @@ class Personagem {
     public:
         Personagem();
         ~Personagem();
+        void setCaractere(char caractere);
         void setPositionAtu(int x, int y);
         void setPositionProx(int x, int y);
         int getXAtu();
