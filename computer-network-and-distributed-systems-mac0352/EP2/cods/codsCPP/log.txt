@@ -1,0 +1,5 @@
+2023-11-26 20:28:7 Servidor iniciado 
+2023-11-26 20:34:14 Servidor iniciado 
+2023-11-26 20:34:18 Conexão realizada por um cliente 127.0.0.1 
+2023-11-26 20:34:20 Conexão realizada por um cliente 127.0.0.1 
+2023-11-26 20:34:33 Conexão realizada por um cliente 127.0.0.1 
