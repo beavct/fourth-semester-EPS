@@ -121,7 +121,7 @@ analyze tree = case tree of
             then error "ERRO analyze: identificador não aceito, pois contém símbolo não permitido"
           else if isFirstCharNumeric symbol 
             then error "Identificador não aceito, pois o primeiro caracter é um número"
-          else if symbol `notElem` ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote"]
+          else if symbol `notElem` ["call", "lambda", "if", "cons", "head", "tail", "let", "letrec", "quote", "true", "false"]
             then error "ERRO analyze: identificador não aceito, pois é uma palavra reservada"
             else symbol
         _ -> error "ERRO analyze: símbolo esperado no lugar de uma expressão"
