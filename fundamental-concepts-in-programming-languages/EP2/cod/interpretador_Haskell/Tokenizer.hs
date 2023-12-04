@@ -66,6 +66,9 @@ variables = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_!?-+
 sinais :: String
 sinais = "_!?-$+*/&%<>#~@"
 
+relacionais :: [String]
+relacionais = ["<", ">", "<=", ">=", "==", "!="]
+
 -- | Predicado para caracteres de símbolos.
 -- 
 -- Note que este código usa _currying_ na função `elem`.
@@ -115,3 +118,21 @@ isBool    :: String -> Bool
 isBool "true" = True
 isBool "false" = True
 isBool _ = False
+
+-- Verifica se uma string é um símbolo relacional
+isRelSymbol   :: String -> [String] -> Bool
+isRelSymbol _[] = False -- Não é um símbolo relacional
+isRelSymbol symbol (x:xs)
+  | symbol == x = True -- É um símbolo relacional
+  | otherwise = isRelSymbol symbol xs -- Verifica recursivamente
+
+
+data RelationalOp = Equal | NotEqual | LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual
+
+evalRelational :: RelationalOp -> Int -> Int -> Bool
+evalRelational Equal         num1 num2 = num1 == num2
+evalRelational NotEqual      num1 num2 = num1 /= num2
+evalRelational LessThan      num1 num2 = num1 < num2
+evalRelational GreaterThan   num1 num2 = num1 > num2
+evalRelational LessThanOrEqual    num1 num2 = num1 <= num2
+evalRelational GreaterThanOrEqual num1 num2 = num1 >= num2

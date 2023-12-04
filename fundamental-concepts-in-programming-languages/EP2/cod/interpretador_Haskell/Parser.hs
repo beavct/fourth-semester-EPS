@@ -2,7 +2,7 @@ module Parser where
 
 import Text.Read (readMaybe)
 
-import Tokenizer (isNumeral, isSymbol, isBool, isNumeralChar, isVariable, isVariableChar, isForbidden, sinais)
+import Tokenizer (isNumeral, isSymbol, isBool, isNumeralChar, isVariable, isVariableChar, isForbidden, sinais, isRelSymbol, relacionais, RelationalOp, evalRelational)
 import Types (Token, ParseTree (..), ExprS (..))
 
 -- | O parser transforma uma lista de tokens em uma árvora sintática.
@@ -105,6 +105,13 @@ analyze tree = case tree of
                       then error "ERRO analyze: identificador não aceito"
                       else LetrecS (getSymbol 1) (analyzePos 2) (analyzePos 3)
     Leaf "quote"  -> QuoteS (show (tree `index` 1))
+    -- MODIFICAÇÃO
+    Leaf "="  -> RelationalS EqualS (analyzePos 1) (analyzePos 2)
+    Leaf "!=" -> RelationalS NotEqualS (analyzePos 1) (analyzePos 2)
+    Leaf "<"  -> RelationalS LessThanS (analyzePos 1) (analyzePos 2)
+    Leaf ">"  -> RelationalS GreaterThanS (analyzePos 1) (analyzePos 2)
+    Leaf "<=" -> RelationalS LessThanOrEqualS (analyzePos 1) (analyzePos 2)
+    Leaf ">=" -> RelationalS GreaterThanOrEqualS (analyzePos 1) (analyzePos 2)
 
     _ -> error ("ERRO analyze: elemento da parse tree inesperado (" ++ show first ++ ")")
     where

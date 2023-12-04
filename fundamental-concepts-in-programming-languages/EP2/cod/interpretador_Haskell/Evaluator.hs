@@ -61,7 +61,32 @@ eval exp env = case exp of
         if bool == "true"
           then eval b1 env
           else eval b2 env
-      _ -> error "ERRO eval IfC: condição não é um número nem booleano"
+      RelV cond e1 e2 -> 
+          if cond == ">"
+            then if e1 > e2
+              then eval b1 env
+              else eval b2 env
+          else if cond == "<"
+            then if e1 < e2
+              then eval b1 env
+              else eval b2 env
+          else if cond == ">="
+            then if e1 >= e2
+              then eval b1 env
+              else eval b2 env
+          else if cond == "<="
+            then if e1 <= e2
+              then eval b1 env
+              else eval b2 env
+          else if cond == "=="
+            then if e1 == e2
+              then eval b1 env
+              else eval b2 env
+          else -- if symbol == "!="
+            if e1 /= e2
+              then eval b1 env
+              else eval b2 env
+      _ -> error "ERRO eval IfC: condição não é um número, nem booleano, expressão relacional"
   ConsC e1 e2    -> ConsV (eval e1 env) (eval e2 env)
   HeadC e        ->
     case eval e env of

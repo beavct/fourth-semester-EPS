@@ -130,7 +130,8 @@
 <intnum>        ::= <digit>+
 <number>        ::= <intnum> | <intnum> "." <intnum>
 <other_symb>    ::=  "_" | "! " | "?" | "<" | ">" | "#" | "%"
-<reserv_symb>   ::=   "(" | ")" | "+" | "-" | "*" | "~" 
+<reserv_symb> ::= "(" | ")" | "+" | "-" | "*" | "~" | "%" |
+                "<" | ">" | "<=" | ">=" | "==" | "!="
 <symbol>        ::=  <reserv_symb> | <other_symb>
 <reserv_word>   ::=  "cons" | "head" | "tail" | 
                      "if" | "let" | "letrec" | 
@@ -138,6 +139,13 @@
 <reservedW>     ::=  <reserv_symb> | <reserv_word>
 
 <id>            ::= <notReserved> | <maiusculas> <idChars>*
+
+
+/* -- Operadores Relacionais -- */
+<eq_op> ::= " == " | " != "
+<cmp_op> ::= " > " | " >= " | " < " | " <= "
+<op_rel> ::= <eq_op> | <cmp_op>
+<rel_expr> ::= "(" <op_rel> <arith_expr> " " <arith_expr> ")"
 
 
 /* -- Operadores Aritméticos -- */
@@ -167,8 +175,8 @@
 
 /* -- expressões if -- */
 /* MODIFICAÇÃO: IF */
-<cond>  ::= <code>  | <bool>
-
+/*No enunciado ela colocou só <rel_expr> | <bool>*/
+<cond>  ::= <code>  | <bool> | <rel_expr> 
 <if>    ::= "if " <cond>  " " <pos>  " " <neg> 
 <pos>   ::= <code>
 <neg>   ::= <code>
