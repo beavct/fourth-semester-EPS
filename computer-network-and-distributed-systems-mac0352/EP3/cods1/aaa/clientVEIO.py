@@ -322,8 +322,8 @@ class HTTPResponse(io.BufferedIOBase):
                 skip = self.fp.readline(_MAXLINE + 1)
                 if len(skip) > _MAXLINE:
                     raise LineTooLong("header line")
-                skip = skip.strip()
-                if not skip:
+                skip = skip.strip() # strip(): remove espaços em branco bi começo e no fim da string
+                if not skip: # se a string é vazia
                     break
                 if self.debuglevel > 0:
                     print("header:", skip)

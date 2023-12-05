@@ -217,7 +217,7 @@ def _read_headers(fp):
         headers.append(line)
         if len(headers) > _MAXHEADERS:
             raise HTTPException("got more than %d headers" % _MAXHEADERS)
-        if line in (b'\r\n', b'\n', b''):
+        if line in (b'\r\n', b'\n', b''): # se é vazia, tem espaço ou sla
             break
     return headers
 

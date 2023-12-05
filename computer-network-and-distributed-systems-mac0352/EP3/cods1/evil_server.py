@@ -7,7 +7,8 @@ def dealWithClient(newSocket,destAddr):
     recvData = newSocket.recv(1024)
     # Resposta HTTP
     # 200 ok ou 100 continue ????
-    newSocket.send(b"""HTTP/1.1 100 OK\n""")
+    # newSocket.send(b"""HTTP/1.1 100 OK\n""")
+    newSocket.send(b"""HTTP/1.1 100 Continue\n""")
 
     # servidor echo (pelo menos parece)
     while True:
@@ -25,7 +26,7 @@ def dealWithClient(newSocket,destAddr):
             print('[%s]close'%str(destAddr))
             sleep(10)
             print('over')
-            #break
+            break
 
     #newSocket.close()
 
