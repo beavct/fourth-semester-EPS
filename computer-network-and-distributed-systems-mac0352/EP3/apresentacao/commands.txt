@@ -1,0 +1,24 @@
+Minha senha:
+143641
+- Vai precisar pra rodar o wireshark, quando ele pedir a digital passa errado q ai ele pede a senha pra rodar o sudo
+- Posso já colocar a digital antes da apresentação, mas se precisar da senha ta ai
+
+- Filtro pra usar no wireshark: tcp.port == 8085
+Já deixei esse filtro salvo como "redes" no menuzinho
+
+$ pyenv versions 
+- Mostra as versões de python instaladas
+
+$ pyenv shell <versão>
+- Terminal atual roda a versão especifica 
+
+$ pyenv shell 3.5.10
+- Versão com erro
+
+$ pyenv shell 3.11.6 
+- Versão corrigida 
+
+$ top 
+- Ver o consumo de CPU dos processos
+
+- Códigos do cliente exemplo, servidor exemplo, código antigo (client_erro), e cliente corrigido (client_fixed) na pasta ~/Desktop/EP3

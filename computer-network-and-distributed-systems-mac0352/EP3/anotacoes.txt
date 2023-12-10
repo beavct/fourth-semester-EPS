@@ -1,0 +1,55 @@
+CVE-2021-3737:
+
+- A flaw was found in python. An improperly handled HTTP response in the HTTP client code of python 
+may allow a remote attacker, who controls the HTTP server, to make the client script enter an 
+infinite loop, consuming CPU time. The highest threat from this vulnerability is to system availability.
+
+- urllib http client possible infinite loop on a 100 Continue response
+
+- Versions:	Python 3.10, Python 3.9, Python 3.8, Python 3.7, Python 3.6
+
+- Summary
+Multiple NetApp products incorporate Python. Python versions 3.6.0 prior to 3.6.14, 3.7.0 prior to 3.7.11, 3.8.0 prior to 3.8.11, and 3.9.0 prior to 3.9.6 are susceptible to a vulnerability which when successfully exploited could lead to Denial of Service (DoS).
+
+- Impact
+Successful exploitation of this vulnerability could lead to Denial of Service (DoS).
+
+- The bug: Our http client can get stuck infinitely reading len(line) < 64k lines after receiving 
+a '100 Continue' http response. So yes, this could lead to our client being a bandwidth sink for 
+anyone in control of a server.
+
+Clear issue: That's a denial of network bandwidth and the denial of service in terms of CPU needed 
+to process read and skip such lines. The infinite lines are size bounded and are not buffered so 
+there is no memory based DoS.
+
+Maybe issue: If a the underlying socket has a timeout set on it, it can be used to prevent the 
+timeout from triggering by sending a line more often than the timeout. this is a denial of service 
+by making a http client connection that an author may have assumed would timeout based on their 
+socket.setdefaulttimeout() settings hang forever.
+
+I expect there are plenty of other ways to accomplish the latter in our http client code though. 
+Ex: A regular response with a huge content length where one byte is transmitted occasionally could 
+also effectively accomplish that. The stdlib http stack doesn't have its own overall http 
+transaction timeout as a feature.
+
+- Diferença dos códigos:
+
+NOVO:
+- Lê as headers na função _read_headers(fp), faz a mesma verificação que o código antigo em relação ao _MAXLINE.
+Mas também verifica a quantidade de headers, se for muito grande retorna uma exceção.
+
+- A função _read_headers(fp) já existia no código antigo como read_headers(fp), mas o método begin() não usava ela e sim o readline()
+e fazia uma coisa mais manual.
+
+- Aparentemente o único erro é que nessa análise manual ele não verificava a quantidade de headers, então lia a quantidade que dava.
+
+- parse_headers(): só mudou que ao invés de chamar a antiga read_headers(fp), chama a nova _read_headers(fp)
+
+TESTES: 
+python 3.5.10
+- Para versões que a biblioteca não foi arrumada, o cliente http recebe todas as headers que o evil_server manda
+sem limitar a leitura por _MAX_HEADERS (que já era definido nessa versão). 
+- Ignora o timeout.
+
+python 3.11.6
+- Limita a leitura por _MAX_HEADER=100

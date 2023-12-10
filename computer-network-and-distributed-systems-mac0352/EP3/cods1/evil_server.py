@@ -15,7 +15,8 @@ def dealWithClient(newSocket,destAddr):
         # Quando essa linha está comentada envia várias vezes o "x:a"
         # Erro: http.client.HTTPException: got more than 100 headers
         #recvData = newSocket.recv(1024) # tava comentado
-        newSocket.send(b"""x:a\n""")
+        newSocket.send(b"""foo\n""")
+        # newSocket.send(b"""x:a\n""")
 
         # Se recebeu dados, printa 
         if len(recvData)>0:
