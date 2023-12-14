@@ -1,4 +1,5 @@
 module Types where
+{- import Types (RelationalOp(NotEqualS, LessThanS, GreaterThanS, LessThanOrEqualS, GreaterThanOrEqualS)) -}
 
 -- | Tokens representam as componentes básicas de um código.
 --
@@ -8,7 +9,7 @@ module Types where
 -- O tipo `Token` é equivalente ao tipo `String`.
 type Token = String
 
-data RelationalOp = EqualS | NotEqualS | LessThanS | GreaterThanS | LessThanOrEqualS | GreaterThanOrEqualS
+{- data RelationalOp = {- EqualS |  -}NotEqualS | LessThanS | GreaterThanS | LessThanOrEqualS | GreaterThanOrEqualS -}
 
 -- | Árvore sintática inicial, sem marcações de semântica
 -- 
@@ -136,8 +137,8 @@ data ExprS
     QuoteS   { symbolS :: String }
   | -- | Interpretação do booleano.
     BoolS { boolS :: String }
-  | 
-    RelationalS { relS :: String, leftS :: ExprS , rightS :: ExprS }
+{-   | 
+    RelationalS { relS :: String, leftS :: ExprS , rightS :: ExprS } -}
   -- | -- representa a comparação B<S
   --   BleastS { leftS :: ExprS, rightS :: ExprS }
   -- | -- representa a comparação B>S
@@ -150,6 +151,18 @@ data ExprS
   --   BequalS { leftS :: ExprS, rightS :: ExprS }
   -- | -- representa a comparação B!=S
   --   BdiffS { leftS :: ExprS, rightS :: ExprS }
+  |
+    EqualS { leftS :: ExprS , rightS :: ExprS }
+  |
+    NotEqualS { leftS :: ExprS , rightS :: ExprS }
+  |
+    LessThanS { leftS :: ExprS , rightS :: ExprS }
+  |
+    GreaterThanS { leftS :: ExprS , rightS :: ExprS }
+  |
+    LessThanOrEqualS { leftS :: ExprS , rightS :: ExprS }
+  |
+    GreaterThanOrEqualS { leftS :: ExprS , rightS :: ExprS }
   deriving (Show, Eq)
 
 -- | Árvore sintática com marcações de semântica, depois do processo
@@ -204,8 +217,8 @@ data ExprC
     QuoteC  { symbolC :: String }
   |  -- | Interpretação do booleano.
     BoolC   { boolC :: String }
-  | 
-    RelationalC { relC :: String, leftC :: ExprC , rightC :: ExprC }
+{-   | 
+    RelationalC { relC :: String, leftC :: ExprC , rightC :: ExprC } -}
   -- | -- representa a comparação B<S
   --   BleastC { leftC :: ExprC, rightC :: ExprC }
   -- | -- representa a comparação B>S
@@ -218,6 +231,18 @@ data ExprC
   --   BequalC { leftC :: ExprC, rightC :: ExprC }
   -- | -- representa a comparação B!=S
   --   BdiffC { leftC :: ExprC, rightC :: ExprC }
+  |
+    EqualC { leftC :: ExprC , rightC :: ExprC }
+  |
+    NotEqualC { leftC :: ExprC , rightC :: ExprC }
+  |
+    LessThanC { leftC :: ExprC , rightC :: ExprC }
+  |
+    GreaterThanC { leftC :: ExprC , rightC :: ExprC }
+  |
+    LessThanOrEqualC { leftC :: ExprC , rightC :: ExprC }
+  |
+    GreaterThanOrEqualC { leftC :: ExprC , rightC :: ExprC }
   deriving (Show, Eq)
 
 -- | Valores primitivos da linguagem.
@@ -235,8 +260,8 @@ data Value
     SymV  { symbolV :: String }
   | -- | Representa um booleano.
     BoolV { boolV :: String }
-  | 
-    RelationalV { relV :: RelationalOp, leftV :: ExprC , rightV :: ExprC }
+{-   | 
+    RelV { relV :: RelationalOp, leftV :: ExprC , rightV :: ExprC } -}
   deriving (Show, Eq)
 
 -- | Vínculo entre um identificador (nome) e um valor.

@@ -30,6 +30,10 @@ import Env (extendEnv, lookupEnv)
 -- Para adicionar funcionalidade à linguagem, é necessário acrescentar
 -- código a esta função (a não ser que a funcionalidade possa ser descrita
 -- a partir de açúcares sintáticos).
+boolToString :: Bool -> String
+boolToString True = "true"
+boolToString False = "false"
+
 eval :: ExprC -> Env -> Value
 eval exp env = case exp of
   NumC  num   -> NumV num
@@ -42,6 +46,30 @@ eval exp env = case exp of
     case (eval e1 env, eval e2 env) of
       (NumV left, NumV right) -> NumV (left * right)
       (_, _)                  -> error "ERRO eval MultC: um dos argumentos não é um número"
+  EqualC e1 e2 ->
+    case (eval e1 env, eval e2 env) of 
+      (NumV left, NumV right) -> BoolV (boolToString (left == right))
+      (_, _)                  -> error "ERRO eval EqualC: um dos argumentos não é um número"
+  NotEqualC e1 e2 ->
+    case (eval e1 env, eval e2 env) of 
+      (NumV left, NumV right) -> BoolV (boolToString (left /= right))
+      (_, _)                  -> error "ERRO eval NotEqualC: um dos argumentos não é um número"
+  LessThanC e1 e2 ->
+    case (eval e1 env, eval e2 env) of 
+      (NumV left, NumV right) -> BoolV (boolToString (left < right))
+      (_, _)                  -> error "ERRO eval LessThanC: um dos argumentos não é um número"
+  GreaterThanC e1 e2 ->
+    case (eval e1 env, eval e2 env) of 
+      (NumV left, NumV right) -> BoolV (boolToString (left > right))
+      (_, _)                  -> error "ERRO eval GreaterThanC: um dos argumentos não é um número"
+  LessThanOrEqualC e1 e2 ->
+    case (eval e1 env, eval e2 env) of 
+      (NumV left, NumV right) -> BoolV (boolToString (left <= right))
+      (_, _)                  -> error "ERRO eval LessThanOrEqualC: um dos argumentos não é um número"
+  GreaterThanOrEqualC e1 e2 ->
+    case (eval e1 env, eval e2 env) of 
+      (NumV left, NumV right) -> BoolV (boolToString (left >= right))
+      (_, _)                  -> error "ERRO eval GreaterThanOrEqualC: um dos argumentos não é um número"
   LamC argName body -> ClosV argName body env
   AppC fun arg ->
     case closure of
@@ -61,31 +89,7 @@ eval exp env = case exp of
         if bool == "true"
           then eval b1 env
           else eval b2 env
-      RelV cond e1 e2 -> 
-          if cond == ">"
-            then if e1 > e2
-              then eval b1 env
-              else eval b2 env
-          else if cond == "<"
-            then if e1 < e2
-              then eval b1 env
-              else eval b2 env
-          else if cond == ">="
-            then if e1 >= e2
-              then eval b1 env
-              else eval b2 env
-          else if cond == "<="
-            then if e1 <= e2
-              then eval b1 env
-              else eval b2 env
-          else if cond == "=="
-            then if e1 == e2
-              then eval b1 env
-              else eval b2 env
-          else -- if symbol == "!="
-            if e1 /= e2
-              then eval b1 env
-              else eval b2 env
+
       _ -> error "ERRO eval IfC: condição não é um número, nem booleano, expressão relacional"
   ConsC e1 e2    -> ConsV (eval e1 env) (eval e2 env)
   HeadC e        ->
@@ -110,3 +114,4 @@ eval exp env = case exp of
       closure = eval val env
   QuoteC sym -> SymV sym
   BoolC bool -> BoolV bool 
+

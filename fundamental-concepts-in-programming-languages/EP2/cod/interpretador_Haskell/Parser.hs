@@ -106,12 +106,12 @@ analyze tree = case tree of
                       else LetrecS (getSymbol 1) (analyzePos 2) (analyzePos 3)
     Leaf "quote"  -> QuoteS (show (tree `index` 1))
     -- MODIFICAÇÃO
-    Leaf "="  -> RelationalS EqualS (analyzePos 1) (analyzePos 2)
-    Leaf "!=" -> RelationalS NotEqualS (analyzePos 1) (analyzePos 2)
-    Leaf "<"  -> RelationalS LessThanS (analyzePos 1) (analyzePos 2)
-    Leaf ">"  -> RelationalS GreaterThanS (analyzePos 1) (analyzePos 2)
-    Leaf "<=" -> RelationalS LessThanOrEqualS (analyzePos 1) (analyzePos 2)
-    Leaf ">=" -> RelationalS GreaterThanOrEqualS (analyzePos 1) (analyzePos 2)
+    Leaf "==" -> EqualS (analyzePos 1) (analyzePos 2)
+    Leaf "!=" -> NotEqualS (analyzePos 1) (analyzePos 2)
+    Leaf "<"  -> LessThanS (analyzePos 1) (analyzePos 2)
+    Leaf ">"  -> GreaterThanS (analyzePos 1) (analyzePos 2)
+    Leaf "<=" -> LessThanOrEqualS (analyzePos 1) (analyzePos 2)
+    Leaf ">=" -> GreaterThanOrEqualS (analyzePos 1) (analyzePos 2)
 
     _ -> error ("ERRO analyze: elemento da parse tree inesperado (" ++ show first ++ ")")
     where

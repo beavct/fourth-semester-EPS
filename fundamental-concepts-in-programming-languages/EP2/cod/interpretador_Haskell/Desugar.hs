@@ -1,6 +1,7 @@
 module Desugar where
 
 import Types (ExprS (..), ExprC (..))
+import Data.Functor.Classes (eq1)
 
 -- | _Desaçucarizador_.
 --
@@ -51,5 +52,11 @@ desugar expr = case expr of
       (desugar val2)
   LetrecS name val body -> LetrecC name (desugar val) (desugar body)
   QuoteS symbol -> QuoteC symbol
-  BoolS bool -> BoolC bool
-  RelS symbol e1 e2 -> RelC symbol (desugar e1) (desugar e2)
+  BoolS bool    -> BoolC bool
+  EqualS e1 e2               -> EqualC (desugar e1) (desugar e2)
+  NotEqualS e1 e2            -> NotEqualC (desugar e1) (desugar e2)
+  LessThanS e1 e2            -> LessThanC (desugar e1) (desugar e2)
+  GreaterThanS e1 e2         -> GreaterThanC (desugar e1) (desugar e2)
+  LessThanOrEqualS e1 e2     -> LessThanOrEqualC (desugar e1) (desugar e2)
+  GreaterThanOrEqualS e1 e2  -> GreaterThanOrEqualC (desugar e1) (desugar e2)
+{-   RelS symbol e1 e2 -> RelC symbol (desugar e1) (desugar e2) -}
